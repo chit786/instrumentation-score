@@ -61,7 +61,7 @@ We welcome feature suggestions! Please open an issue with:
 
 ```bash
 # Clone the repository
-git clone https://github.com/instrumentation-score/instrumentation-score.git
+git clone https://github.com/chit786/instrumentation-score.git
 cd instrumentation-score
 
 # Install dependencies

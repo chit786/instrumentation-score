@@ -5,7 +5,7 @@
 
 A production-ready tool that analyzes Prometheus metrics against [instrumentation best practices](https://github.com/instrumentation-score/spec), providing actionable insights to improve observability quality, reduce costs, and maintain healthy metrics.
 
-[![CI](https://github.com/instrumentation-score/instrumentation-score/workflows/CI/badge.svg)](https://github.com/instrumentation-score/instrumentation-score/actions)
+[![CI](https://github.com/chit786/instrumentation-score/actions/workflows/ci.yml/badge.svg)](https://github.com/chit786/instrumentation-score/actions)
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Spec Compliant](https://img.shields.io/badge/Spec-Compliant-green)](https://github.com/instrumentation-score/spec)
@@ -61,23 +61,23 @@ This project bridges the gap, allowing Prometheus users to benefit from the Inst
 ### Installation Options
 
 #### Option 1: Download Pre-built Binary (Recommended)
-Download the latest release for your platform from the [releases page](https://github.com/instrumentation-score/instrumentation-score/releases).
+Download the latest release for your platform from the [releases page](https://github.com/chit786/instrumentation-score/releases).
 
 ```bash
 # Linux
-wget https://github.com/instrumentation-score/instrumentation-score/releases/latest/download/instrumentation-score-linux-amd64.tar.gz
+wget https://github.com/chit786/instrumentation-score/releases/latest/download/instrumentation-score-linux-amd64.tar.gz
 tar -xzf instrumentation-score-linux-amd64.tar.gz
 chmod +x instrumentation-score-linux-amd64
 sudo mv instrumentation-score-linux-amd64 /usr/local/bin/instrumentation-score
 
 # macOS (Intel)
-wget https://github.com/instrumentation-score/instrumentation-score/releases/latest/download/instrumentation-score-darwin-amd64.tar.gz
+wget https://github.com/chit786/instrumentation-score/releases/latest/download/instrumentation-score-darwin-amd64.tar.gz
 tar -xzf instrumentation-score-darwin-amd64.tar.gz
 chmod +x instrumentation-score-darwin-amd64
 sudo mv instrumentation-score-darwin-amd64 /usr/local/bin/instrumentation-score
 
 # macOS (Apple Silicon)
-wget https://github.com/instrumentation-score/instrumentation-score/releases/latest/download/instrumentation-score-darwin-arm64.tar.gz
+wget https://github.com/chit786/instrumentation-score/releases/latest/download/instrumentation-score-darwin-arm64.tar.gz
 tar -xzf instrumentation-score-darwin-arm64.tar.gz
 chmod +x instrumentation-score-darwin-arm64
 sudo mv instrumentation-score-darwin-arm64 /usr/local/bin/instrumentation-score
@@ -85,12 +85,12 @@ sudo mv instrumentation-score-darwin-arm64 /usr/local/bin/instrumentation-score
 
 #### Option 2: Docker
 ```bash
-docker pull ghcr.io/instrumentation-score/instrumentation-score:latest
+docker pull ghcr.io/chit786/instrumentation-score:latest
 ```
 
 #### Option 3: Build from Source
 ```bash
-git clone https://github.com/instrumentation-score/instrumentation-score.git
+git clone https://github.com/chit786/instrumentation-score.git
 cd instrumentation-score
 go build -o instrumentation-score .
 ```
@@ -1396,8 +1396,8 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
 
 ### Ways to Contribute
 
-- 🐛 [Report bugs](https://github.com/instrumentation-score/instrumentation-score/issues/new?template=bug_report.md)
-- 💡 [Request features](https://github.com/instrumentation-score/instrumentation-score/issues/new?template=feature_request.md)
+- 🐛 [Report bugs](https://github.com/chit786/instrumentation-score/issues/new?template=bug_report.md)
+- 💡 [Request features](https://github.com/chit786/instrumentation-score/issues/new?template=feature_request.md)
 - 📖 Improve documentation
 - 🔧 Submit pull requests
 - ⭐ Star the project if you find it useful!
@@ -1406,8 +1406,8 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
 
 1. Read our [Contributing Guide](CONTRIBUTING.md)
 2. Check out our [Code of Conduct](CODE_OF_CONDUCT.md)
-3. Look for ["good first issue"](https://github.com/instrumentation-score/instrumentation-score/labels/good%20first%20issue) labels
-4. Join the conversation in [Discussions](https://github.com/instrumentation-score/instrumentation-score/discussions)
+3. Look for ["good first issue"](https://github.com/chit786/instrumentation-score/labels/good%20first%20issue) labels
+4. Join the conversation in [Discussions](https://github.com/chit786/instrumentation-score/discussions)
 
 For detailed contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -1416,8 +1416,8 @@ For detailed contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 ## 🆘 Support
 
 - 📖 [Instrumentation Score Spec](https://github.com/instrumentation-score/spec)
-- 🐛 [Report Issues](https://github.com/instrumentation-score/instrumentation-score/issues)
-- 💬 [Discussions](https://github.com/instrumentation-score/instrumentation-score/discussions)
+- 🐛 [Report Issues](https://github.com/chit786/instrumentation-score/issues)
+- 💬 [Discussions](https://github.com/chit786/instrumentation-score/discussions)
 
 ---
 
