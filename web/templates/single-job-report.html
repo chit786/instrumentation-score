@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instrumentation Score Report - {{.ServiceName}}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .nav-tab {
+            color: #888;
+            text-decoration: none;
+            padding: 8px 0;
+            font-size: 14px;
+            transition: color 0.3s;
+        }
+
+        .nav-tab:hover {
+            color: #fff;
+        }
+
+        .nav-tab.active {
+            color: #fff;
+            border-bottom: 2px solid #4a9eff;
+        }
+
+        .score-section {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .score-circle {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .score-ring {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #4caf50 0deg,
+                #4caf50 calc({{.ScoreInt}}deg * 3.6),
+                rgba(255, 255, 255, 0.1) calc({{.ScoreInt}}deg * 3.6)
+            );
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+        }
+
+        .score-inner {
+            width: 90px;
+            height: 90px;
+            background: #1a1a2e;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            color: #4caf50;
+        }
+
+        .score-info h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+
+        .score-info p {
+            color: #aaa;
+            line-height: 1.6;
+            max-width: 600px;
+        }
+
+        .recommendations {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge.recommended {
+            background: rgba(74, 158, 255, 0.2);
+            color: #4a9eff;
+            border: 1px solid rgba(74, 158, 255, 0.3);
+        }
+
+        .impact-critical {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        .impact-important {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+            border: 1px solid rgba(255, 152, 0, 0.3);
+        }
+
+        .impact-moderate {
+            background: rgba(33, 150, 243, 0.2);
+            color: #2196f3;
+            border: 1px solid rgba(33, 150, 243, 0.3);
+        }
+
+        .impact-low {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .card-content {
+            color: #bbb;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .code-block {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 12px;
+            margin: 12px 0;
+            font-family: 'Monaco', 'Courier New', monospace;
+            font-size: 13px;
+            color: #4a9eff;
+            overflow-x: auto;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .status-passed {
+            background: rgba(76, 175, 80, 0.2);
+            color: #4caf50;
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .status-failed {
+            background: rgba(255, 152, 0, 0.2);
+            color: #ff9800;
+            border: 1px solid rgba(255, 152, 0, 0.3);
+        }
+
+        .details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .details.expanded {
+            max-height: 500px;
+        }
+
+        .learn-more {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #4a9eff;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            padding: 8px 0;
+        }
+
+        .learn-more:hover {
+            color: #6bb3ff;
+            gap: 10px;
+        }
+
+        .learn-more::after {
+            content: '↗';
+            font-size: 16px;
+        }
+
+        .failed-checks {
+            background: rgba(255, 152, 0, 0.1);
+            border-left: 3px solid #ff9800;
+            padding: 12px;
+            margin-top: 12px;
+            border-radius: 4px;
+        }
+
+        .failed-checks-title {
+            font-weight: 600;
+            color: #ff9800;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        .failed-checks-list {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .failed-checks-list li {
+            padding: 4px 0;
+            color: #ccc;
+            font-size: 13px;
+        }
+
+        .failed-checks-list li::before {
+            content: '• ';
+            color: #ff9800;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+
+        .stats {
+            display: flex;
+            gap: 20px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat {
+            flex: 1;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4caf50, #8bc34a);
+            border-radius: 3px;
+            transition: width 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .card:nth-child(1) { animation-delay: 0.1s; }
+        .card:nth-child(2) { animation-delay: 0.2s; }
+        .card:nth-child(3) { animation-delay: 0.3s; }
+        .card:nth-child(4) { animation-delay: 0.4s; }
+
+        @media (max-width: 768px) {
+            .score-section {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .recommendations {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="nav-tabs">
+                <a href="#" class="nav-tab active">Instrumentation report</a>
+            </div>
+
+            <div class="score-section">
+                <div class="score-circle">
+                    <div class="score-ring">
+                        <div class="score-inner">{{.ScoreInt}}%</div>
+                    </div>
+                </div>
+                <div class="score-info">
+                    <h1>{{.Category}} instrumentation</h1>
+                    <p>This service has {{.Category | lower}} instrumentation, make the suggested improvements to gain additional insights from Application Observability</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="recommendations">
+            {{range .Results}}
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Rule {{.RuleID}}</div>
+                        <span class="status-indicator {{getRuleStatusClass .PassedChecks .TotalChecks}}">
+                            {{getRuleStatus .PassedChecks .TotalChecks}}
+                        </span>
+                    </div>
+                    <span class="badge {{getImpactClass .Impact}}">{{.Impact}}</span>
+                </div>
+
+                <div class="card-content">
+                    <p><strong>Impact:</strong> {{.Impact}} - {{.PassedMetrics}}/{{.TotalMetrics}} metrics passed ({{passRate .PassedMetrics .TotalMetrics | printf "%.1f"}}%)</p>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{passRate .PassedMetrics .TotalMetrics}}%"></div>
+                    </div>
+
+                    {{if .FailedChecks}}
+                    <div class="failed-checks">
+                        <div class="failed-checks-title">Failed Checks:</div>
+                        <ul class="failed-checks-list">
+                            {{range .FailedChecks}}
+                            <li>{{.}}</li>
+                            {{end}}
+                        </ul>
+                    </div>
+                    {{end}}
+                </div>
+
+                <div class="details" id="details-{{.RuleID}}">
+                    <div class="code-block">
+                        Rule ID: {{.RuleID}}<br>
+                        Impact Level: {{.Impact}}<br>
+                        Status: {{if eq .PassedMetrics .TotalMetrics}}All metrics passed{{else}}{{.TotalMetrics | printf "%d"}} metrics, {{.PassedMetrics | printf "%d"}} passed{{end}}
+                    </div>
+                </div>
+
+                <a class="learn-more" onclick="toggleDetails('{{.RuleID}}')">Learn more</a>
+            </div>
+            {{end}}
+        </div>
+    </div>
+
+    <script>
+        function toggleDetails(ruleId) {
+            const details = document.getElementById('details-' + ruleId);
+            details.classList.toggle('expanded');
+        }
+    </script>
+</body>
+</html>
+

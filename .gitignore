@@ -1,0 +1,157 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# Build artifacts
+instrumentation-score-service
+instrumentation-score-service.exe
+instrumentation-cli
+instrumentation-cli.exe
+instrumentation-scorer
+instrumentation-scorer.exe
+bin/
+
+reports/*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+/tmp/
+temp/
+*.tmp
+*.temp
+
+# Backup files
+*.bak
+*.backup
+rules/rules.yml.bak
+rules/rules.yml.backup
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker files
+docker-compose.override.yml
+docker-compose.*.yml
+.dockerignore
+
+# Coverage reports
+coverage.txt
+coverage.html
+coverage.out
+
+# Profiling files
+*.prof
+*.pprof
+
+# Test coverage
+coverage/
+
+# Local development
+local/
+dev/
+
+# Configuration overrides
+config.local.yaml
+config.local.yml
+
+# Generated metrics files
+series_*.json
+metrics_labels_*.csv
+label_values_*.csv
+temp_metrics.json
+converted_*.json
+metrics_count.txt
+
+# Test output files
+test-jobs-report.json
+test-jobs-report.html
+all-jobs-report.html
+report.html
+*.html
+!web/templates/*.html
+*.json
+
+# Temporary directories
+instrumentation-rules/
+
+# Runtime files
+*.pid
+*.sock
+
+# Cache directories
+.cache/
+cache/
+
+# Node modules (if any frontend tools are added)
+node_modules/
+
+# Python cache (if any Python tools are added)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Java build artifacts (if any Java tools are added)
+*.class
+*.jar
+*.war
+target/
+
+# Rust build artifacts (if any Rust tools are added)
+target/
+Cargo.lock
+
+# Terraform files (if infrastructure as code is added)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Kubernetes secrets and sensitive files
+secrets/
+*.secret
+*.key
+*.pem
+*.crt
+
+# Database files (if any)
+*.db
+*.sqlite
+*.sqlite3

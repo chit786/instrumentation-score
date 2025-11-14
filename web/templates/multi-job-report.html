@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instrumentation Score Report - All Jobs</title>
+    <style>{{.CSS}}</style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-title">Jobs Overview</div>
+            <div class="sidebar-stats">
+                Total: {{.TotalJobs}} | Avg Score: {{printf "%.1f" .AverageScore}}%
+                <br>Active Series: {{.TotalCardinality | printf "%d"}}
+                {{if .ShowCost}}
+                <br>Total Cost: ${{printf "%.2f" .TotalCost}}/month
+                {{end}}
+            </div>
+        </div>
+
+        <input type="text" class="search-box" id="searchBox" placeholder="Search jobs...">
+
+        <ul class="job-list" id="jobList">
+            {{range $index, $job := .Jobs}}
+            <li class="job-item {{if eq $index 0}}active{{end}}" data-job-id="job-{{$index}}" onclick="showJob('job-{{$index}}')">
+                <div class="job-item-name" title="{{$job.JobName}}">{{$job.JobName}}</div>
+                <div class="job-item-score">
+                    {{printf "%.1f" $job.Score}}%
+                    <span class="score-badge {{if ge $job.Score 90.0}}score-excellent{{else if ge $job.Score 75.0}}score-good{{else if ge $job.Score 50.0}}score-warning{{else}}score-poor{{end}}">
+                        {{if ge $job.Score 90.0}}Excellent{{else if ge $job.Score 75.0}}Good{{else if ge $job.Score 50.0}}Needs Work{{else}}Poor{{end}}
+                    </span>
+                </div>
+            </li>
+            {{end}}
+        </ul>
+    </div>
+
+    <div class="main-content">
+        {{range $index, $job := .Jobs}}
+        <div class="job-section {{if eq $index 0}}active{{end}}" id="job-{{$index}}">
+            <div class="header">
+                <div class="nav-tabs">
+                    <a href="#" class="nav-tab active">Instrumentation report</a>
+                </div>
+
+                <div class="score-section">
+                    <div class="score-circle">
+                        <div class="score-ring" style="background: conic-gradient({{if ge $job.Score 90.0}}#4caf50{{else if ge $job.Score 75.0}}#8bc34a{{else if ge $job.Score 50.0}}#ff9800{{else}}#f44336{{end}} 0deg, {{if ge $job.Score 90.0}}#4caf50{{else if ge $job.Score 75.0}}#8bc34a{{else if ge $job.Score 50.0}}#ff9800{{else}}#f44336{{end}} calc({{$job.ScoreInt}}deg * 3.6), rgba(255, 255, 255, 0.1) calc({{$job.ScoreInt}}deg * 3.6)); box-shadow: 0 4px 20px {{if ge $job.Score 90.0}}rgba(76, 175, 80, 0.3){{else if ge $job.Score 75.0}}rgba(139, 195, 74, 0.3){{else if ge $job.Score 50.0}}rgba(255, 152, 0, 0.3){{else}}rgba(244, 67, 54, 0.3){{end}};">
+                            <div class="score-inner" style="color: {{if ge $job.Score 90.0}}#4caf50{{else if ge $job.Score 75.0}}#8bc34a{{else if ge $job.Score 50.0}}#ff9800{{else}}#f44336{{end}};">{{$job.ScoreInt}}%</div>
+                        </div>
+                    </div>
+                    <div class="score-info">
+                        <h1>{{$job.JobName}}</h1>
+                        <p>{{$job.Category}} instrumentation - {{$job.TotalMetrics}} metrics analyzed</p>
+                        {{if $job.ShowCost}}
+                        <p style="color: #4caf50; font-weight: 600; margin-top: 8px;">
+                            💰 Estimated Cost: ${{printf "%.2f" $job.EstimatedCost}}/month
+                            <span style="color: #888; font-weight: 400; font-size: 12px;">({{$job.TotalCardinality}} series)</span>
+                        </p>
+                        {{end}}
+                    </div>
+                </div>
+            </div>
+
+            <div class="rule-summary" id="rules-{{$job.JobName}}" data-job-score="{{$job.Score}}">
+                {{range $job.Results}}
+                <div class="rule-card" 
+                     data-rule-id="{{.RuleID}}"
+                     data-passed-metrics="{{.PassedMetrics}}"
+                     data-total-metrics="{{.TotalMetrics}}"
+                     data-passed-cardinality="{{.PassedCardinality}}"
+                     data-total-cardinality="{{.TotalCardinality}}"
+                     data-impact="{{.Impact}}"
+                     onclick="showRuleDetailFromCard(this, '{{$job.JobName}}')">
+                    <div class="rule-card-header">
+                        <div class="rule-card-title">{{.RuleID}}</div>
+                        <span class="badge {{getImpactClass .Impact}}">{{.Impact}}</span>
+                    </div>
+                    <div style="color: #bbb; font-size: 13px; margin-bottom: 8px;">
+                        {{.PassedMetrics}}/{{.TotalMetrics}} metrics passed ({{passRate .PassedMetrics .TotalMetrics | printf "%.1f"}}%)
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{passRate .PassedMetrics .TotalMetrics}}%"></div>
+                    </div>
+                </div>
+                {{end}}
+            </div>
+            {{if $job.Metrics}}
+            <div class="metrics-table">
+                <h2>Metrics Details ({{len $job.Metrics}} metrics)</h2>
+                <table id="metrics-table-{{$index}}">
+                    <thead>
+                        <tr>
+                            <th onclick="sortTable({{$index}}, 0)" style="cursor: pointer;">Metric Name ▼</th>
+                            <th onclick="sortTable({{$index}}, 1)" style="cursor: pointer;">Labels ▼</th>
+                            <th onclick="sortTable({{$index}}, 2)" style="cursor: pointer;">Cardinality ▼</th>
+                            <th onclick="sortTable({{$index}}, 3)" style="cursor: pointer;">Status ▼</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{range $job.Metrics}}
+                        <tr style="cursor: pointer;" 
+                            onclick="showMetricDetail('{{.MetricName}}', '{{.Labels}}', '{{.Cardinality}}', '{{.Status}}', '{{range .FailedRules}}{{.}}|{{end}}')"
+                            onmouseover="this.style.background='rgba(255,255,255,0.05)'" 
+                            onmouseout="this.style.background=''">
+                            <td style="font-family: monospace; color: #4a9eff;">{{.MetricName}}</td>
+                            <td style="font-size: 12px; color: #888;">{{.Labels}}</td>
+                            <td data-value="{{.Cardinality}}">{{.Cardinality}}</td>
+                            <td class="{{if eq .Status "pass"}}status-pass{{else}}status-fail{{end}}" data-status="{{.Status}}">
+                                {{if eq .Status "pass"}}
+                                    ✓ Pass
+                                {{else}}
+                                    <div>
+                                        <div>⚠ Failed ({{len .FailedRules}} issue{{if gt (len .FailedRules) 1}}s{{end}})</div>
+                                        <div style="font-size: 11px; color: #ff9800; margin-top: 4px;">
+                                            {{range .FailedRules}}
+                                            <div>• {{.}}</div>
+                                            {{end}}
+                                        </div>
+                                    </div>
+                                {{end}}
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+            </div>
+            {{end}}
+        </div>
+        {{end}}
+    </div>
+
+    <!-- Modal Overlay -->
+    <div id="modalOverlay" class="modal-overlay" onclick="if(event.target===this)closeMetricDetail()">
+        <div id="metricDetailPanel" class="metric-detail-panel">
+            <div class="metric-detail-header">
+                <button class="metric-detail-close" onclick="closeMetricDetail()">×</button>
+                <div class="metric-detail-title">Metric Details</div>
+                <div class="metric-detail-name" id="metricDetailName"></div>
+            </div>
+            <div class="metric-detail-body">
+                <!-- Status Section -->
+                <div class="metric-detail-section">
+                    <div class="metric-detail-section-title">Status</div>
+                    <div id="metricDetailStatus"></div>
+                </div>
+
+                <!-- Overview Section -->
+                <div class="metric-detail-section">
+                    <div class="metric-detail-section-title">Overview</div>
+                    <div class="metric-detail-info">
+                        <div class="metric-detail-info-row">
+                            <span class="metric-detail-info-label">Total Cardinality</span>
+                            <span class="metric-detail-info-value" id="metricDetailCardinality"></span>
+                        </div>
+                        <div class="metric-detail-info-row">
+                            <span class="metric-detail-info-label">Label Count</span>
+                            <span class="metric-detail-info-value" id="metricDetailLabelCount"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Label Breakdown Section -->
+                <div class="metric-detail-section" id="metricLabelsSection">
+                    <div class="metric-detail-section-title" onclick="toggleLabelBreakdown()" style="cursor: pointer; user-select: none;">
+                        <span id="labelToggleIcon">▶</span> Label Breakdown
+                    </div>
+                    <div class="metric-detail-info" id="metricDetailLabels" style="display: none;"></div>
+                    <div style="font-size: 11px; color: #888; margin-top: 12px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
+                        💡 <strong>Tip:</strong> Per-label cardinality analysis available with <code style="color: #4a9eff;">--collect-label-cardinality</code> flag during analysis
+                    </div>
+                </div>
+
+                <!-- Issues Section -->
+                <div class="metric-detail-section" id="metricIssuesSection" style="display: none;">
+                    <div class="metric-detail-section-title">Issues Found</div>
+                    <div id="metricDetailIssues"></div>
+                </div>
+
+                <!-- Recommendations Section -->
+                <div class="metric-detail-section" id="metricRecommendationsSection" style="display: none;">
+                    <div class="metric-detail-section-title">Recommendations</div>
+                    <div id="metricDetailRecommendations"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rule Detail Modal -->
+    <div id="ruleDetailModal" class="modal-overlay" onclick="if(event.target===this)closeRuleDetail()">
+        <div id="ruleDetailPanel" class="metric-detail-panel">
+            <div class="metric-detail-header">
+                <button class="metric-detail-close" onclick="closeRuleDetail()">×</button>
+                <div class="metric-detail-title">Rule Details</div>
+                <div class="metric-detail-name" id="ruleDetailTitle"></div>
+            </div>
+            
+            <div class="metric-detail-body">
+                <!-- Rule Description -->
+                <div id="ruleDescription" style="color: #bbb; font-size: 14px; line-height: 1.6; margin-bottom: 25px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid #4a9eff;"></div>
+                
+                <!-- Key Metrics Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 25px;">
+                    <div class="metric-card">
+                        <div class="metric-label">Contributes</div>
+                        <div id="ruleContribution" class="metric-value"></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Metrics Passed</div>
+                        <div id="ruleMetricsPassed" class="metric-value"></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Pass Rate</div>
+                        <div id="rulePassRate" class="metric-value"></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Impact Level</div>
+                        <div id="ruleImpactLevel" class="metric-value"></div>
+                    </div>
+                </div>
+                
+                <!-- Score Breakdown -->
+                <div style="margin-bottom: 25px;">
+                    <div style="font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Score Breakdown</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <div style="color: #bbb; font-size: 12px; margin-bottom: 5px;">Points Earned</div>
+                            <div id="rulePointsEarned" style="font-size: 18px; font-weight: 600; color: #4caf50;"></div>
+                        </div>
+                        <div>
+                            <div style="color: #bbb; font-size: 12px; margin-bottom: 5px;">Points Possible</div>
+                            <div id="rulePointsPossible" style="font-size: 18px; font-weight: 600; color: #888;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cardinality Info (if applicable) -->
+                <div id="ruleCardinalitySection" style="display: none; margin-bottom: 25px;">
+                    <div style="font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Cardinality Details</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div>
+                            <div style="color: #bbb; font-size: 12px; margin-bottom: 5px;">Passed Series</div>
+                            <div id="rulePassedCardinality" style="font-size: 18px; font-weight: 600; color: #4caf50;"></div>
+                        </div>
+                        <div>
+                            <div style="color: #bbb; font-size: 12px; margin-bottom: 5px;">Total Series</div>
+                            <div id="ruleTotalCardinality" style="font-size: 18px; font-weight: 600; color: #ff9800;"></div>
+                        </div>
+                    </div>
+                    <div style="margin-top: 10px; padding: 10px; background: rgba(255,152,0,0.1); border-radius: 6px; font-size: 12px; color: #ff9800;">
+                        ⚡ This rule uses cardinality-weighted scoring
+                    </div>
+                </div>
+                
+                <!-- Explanation -->
+                <div style="margin-top: 20px;">
+                    <div id="ruleScoreBreakdown" style="padding: 15px; background: rgba(255,255,255,0.03); border-radius: 8px; font-size: 13px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Embed rules config for dynamic UI descriptions
+        window.RULES_CONFIG = {{.RulesConfigJSON}};
+    </script>
+    <script>{{.JS}}</script>
+</body>
+</html>
+

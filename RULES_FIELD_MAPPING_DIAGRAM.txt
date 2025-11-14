@@ -1,0 +1,128 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    RULES CONFIG FIELD MAPPING DIAGRAM                        ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. CSV FILE (Job Metric Data)                                              │
+│    reports/job_metrics_*/api-service.txt                                    │
+└─────────────────────────────────────────────────────────────────────────────┘
+         │
+         │  JOB|METRIC_NAME|LABELS|CARDINALITY
+         │  api-service|http_requests_total|method,status,endpoint|1500
+         │  api-service|http_request_duration_seconds|method,status|250
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 2. GO LOADER (internal/loaders/loaders.go)                                 │
+│    LoadJobMetricReport() → Parses CSV                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+         │
+         │  Converts to:
+         │  - CardinalityData (if data_source: "cardinality")
+         │  - LabelsData      (if data_source: "labels")
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 3. GO STRUCTS                                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────┐   ┌──────────────────────────────┐   │
+│  │ CardinalityData                 │   │ LabelsData                   │   │
+│  ├─────────────────────────────────┤   ├──────────────────────────────┤   │
+│  │ MetricName: string              │   │ MetricName: string           │   │
+│  │   ↑                             │   │   ↑                          │   │
+│  │   └─ CSV: METRIC_NAME           │   │   └─ CSV: METRIC_NAME        │   │
+│  │                                 │   │                              │   │
+│  │ Count: int64                    │   │ Labels: []string             │   │
+│  │   ↑                             │   │   ↑                          │   │
+│  │   └─ CSV: CARDINALITY           │   │   └─ CSV: LABELS (split)     │   │
+│  └─────────────────────────────────┘   └──────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+         │
+         │  Used by Rule Engine
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 4. RULES CONFIG (rules_config.yaml)                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  validators:                                                                │
+│    - name: "check_cardinality"                                              │
+│      data_source: "cardinality"  ◄─── Selects CardinalityData struct       │
+│      conditions:                                                            │
+│        - field: "count"          ◄─── Maps to CardinalityData.Count        │
+│          operator: "lt"                                                     │
+│          value: 10000                                                       │
+│                                                                             │
+│    - name: "check_labels"                                                   │
+│      data_source: "labels"       ◄─── Selects LabelsData struct            │
+│      conditions:                                                            │
+│        - field: "labels"         ◄─── Maps to LabelsData.Labels            │
+│          operator: "not_contains"                                           │
+│          value: "user_id"                                                   │
+│                                                                             │
+│        - field: "label_count"    ◄─── Computed: len(LabelsData.Labels)     │
+│          operator: "lte"                                                    │
+│          value: 10                                                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+         │
+         │  Evaluated by Engine
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 5. RULE ENGINE (internal/engine/engine.go)                                 │
+│    Evaluates conditions against struct fields                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 6. OUTPUT (Score + Report)                                                 │
+│    - JSON, HTML, Text, Prometheus                                          │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                           FIELD MAPPING RULES                                ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────┬─────────────────┬──────────────────┬─────────────────────┐
+│ data_source      │ Go Struct       │ field            │ CSV Source          │
+├──────────────────┼─────────────────┼──────────────────┼─────────────────────┤
+│ "cardinality"    │ CardinalityData │ "metric_name"    │ METRIC_NAME         │
+│ "cardinality"    │ CardinalityData │ "count"          │ CARDINALITY         │
+├──────────────────┼─────────────────┼──────────────────┼─────────────────────┤
+│ "labels"         │ LabelsData      │ "metric_name"    │ METRIC_NAME         │
+│ "labels"         │ LabelsData      │ "labels"         │ LABELS (split)      │
+│ "labels"         │ LabelsData      │ "label_count"    │ COMPUTED (len)      │
+└──────────────────┴─────────────────┴──────────────────┴─────────────────────┘
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                              COMMON MISTAKES                                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+❌ WRONG: Using CSV column names
+   field: "CARDINALITY"  # This is the CSV column name
+
+✅ CORRECT: Using Go struct field names
+   field: "count"        # This is the CardinalityData.Count field
+
+
+❌ WRONG: Wrong data_source for field
+   data_source: "cardinality"
+   field: "labels"       # "labels" doesn't exist in CardinalityData
+
+✅ CORRECT: Match data_source with field
+   data_source: "labels"
+   field: "labels"       # "labels" exists in LabelsData
+
+
+❌ WRONG: Case sensitivity
+   field: "MetricName"   # Wrong case
+   field: "METRIC_NAME"  # CSV column name, not struct field
+
+✅ CORRECT: Use snake_case
+   field: "metric_name"  # Correct Go struct field name
+

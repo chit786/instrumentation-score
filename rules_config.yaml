@@ -1,0 +1,104 @@
+#
+# FIELD MAPPING GUIDE:
+# - data_source: Determines which Go struct to use ("cardinality" or "labels")
+# - field: Maps to Go struct fields (NOT CSV column names)
+#   
+#   For data_source: "cardinality" → CardinalityData struct:
+#     - field: "metric_name" → CardinalityData.MetricName (from CSV: METRIC_NAME)
+#     - field: "count"       → CardinalityData.Count      (from CSV: CARDINALITY)
+#   
+#   For data_source: "labels" → LabelsData struct:
+#     - field: "metric_name" → LabelsData.MetricName (from CSV: METRIC_NAME)
+#     - field: "labels"      → LabelsData.Labels     (from CSV: LABELS, split by comma)
+#     - field: "label_count" → len(LabelsData.Labels) (computed, not in CSV)
+#
+# EXCLUSION LIST:
+# - Exclude specific jobs or metrics from evaluation
+# - Format:
+#   exclusion_list:
+#     - job: "job-name"                    # Exclude entire job (exact match)
+#     - job_name_pattern: "^test-.*"       # Exclude jobs matching regex pattern
+#     - job: "another-job"
+#       metrics:                            # Exclude specific metrics from this job
+#         - "metric_name_1"
+#         - "metric_name_2"
+#     - job_name_pattern: "^staging-.*"
+#       metrics:                            # Exclude specific metrics from jobs matching pattern
+#         - "debug_metric"
+#
+# See RULES_FIELD_MAPPING.md for detailed documentation.
+
+# Exclusion list - jobs and metrics to exclude from evaluation
+exclusion_list: []
+
+rules:
+- rule_id: "PROM-MET-01"
+  description: "Prometheus metrics must follow consistent naming, labeling, and unit conventions"
+  impact: "Important"
+  validators:
+    - name: "prom_metrics_format_check"
+      type: "format"
+      data_source: "labels"
+      ui_title: "Naming Convention"
+      ui_description: "Metric name does not follow Prometheus naming standards (snake_case with appropriate suffix)."
+      conditions:
+        - field: "metric_name"
+          operator: "matches"
+          value: "^[a-z][a-z0-9_]*[a-z0-9]$"
+    
+    - name: "prom_label_name_format_check"
+      type: "labels"
+      data_source: "labels"
+      ui_title: "Label Name Format"
+      ui_description: "One or more label names do not follow Prometheus conventions (must be lowercase snake_case)."
+      conditions:
+        - field: "labels"
+          operator: "matches"
+          value: "^[a-z][a-z0-9_]*$"
+
+- rule_id: "PROM-MET-02"
+  description: "Prometheus metrics must maintain bounded cardinality to control costs and performance"
+  impact: "Critical"
+  validators:
+    - name: "prom_metrics_cardinality_check"
+      type: "cardinality"
+      data_source: "cardinality"
+      ui_title: "High Cardinality"
+      ui_description: "Metric has 5,000-10,000 unique time series (review recommended)."
+      conditions:
+        - field: "count"
+          operator: "lt"
+          value: 10000
+
+- rule_id: "PROM-MET-03"
+  description: "Prometheus metric labels must follow best practices for maintainability"
+  impact: "Important"
+  validators:
+    - name: "prom_metrics_label_size_check"
+      type: "labels"
+      data_source: "labels"
+      ui_title: "Problematic Labels"
+      ui_description: "Metric contains high-cardinality label names (e.g., user_id, session_id, request_id, trace_id)."
+      conditions:
+        - field: "labels"
+          operator: "not_contains"
+          value: "user_id"
+        - field: "labels"
+          operator: "not_contains"
+          value: "session_id"
+        - field: "labels"
+          operator: "not_contains"
+          value: "request_id"
+        - field: "labels"
+          operator: "not_contains"
+          value: "trace_id"
+    
+    - name: "prom_metrics_label_count_check"
+      type: "label_count"
+      data_source: "labels"
+      ui_title: "Too Many Labels"
+      ui_description: "Metric has more than 10 labels, increasing risk of cardinality explosion."
+      conditions:
+        - field: "label_count"
+          operator: "lte"
+          value: 10
