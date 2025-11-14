@@ -8,8 +8,8 @@ import (
 	"os"
 	"strings"
 
-	"instrumentation-score-service/internal/engine"
-	"instrumentation-score-service/web"
+	"instrumentation-score/internal/engine"
+	"instrumentation-score/web"
 
 	"gopkg.in/yaml.v3"
 )

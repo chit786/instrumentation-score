@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"instrumentation-score-service/internal/loaders"
+	"instrumentation-score/internal/loaders"
 )
 
 func TestRuleEngine_EvaluateCardinalityRule(t *testing.T) {

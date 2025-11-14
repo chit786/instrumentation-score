@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 
-	"instrumentation-score-service/cmd"
+	"instrumentation-score/cmd"
 )
 
 func main() {

@@ -8,7 +8,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/instrumentation-score-service .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/instrumentation-score .
 
 FROM alpine:latest
 
@@ -19,11 +19,11 @@ RUN addgroup -g 1001 -S instrumentation && \
 
 WORKDIR /app
 
-COPY --from=builder /app/bin/instrumentation-score-service ./instrumentation-score-service
+COPY --from=builder /app/bin/instrumentation-score ./instrumentation-score
 COPY rules_config.yaml ./rules_config.yaml
 
 RUN chown -R instrumentation:instrumentation /app
 
 USER instrumentation
 
-ENTRYPOINT ["./instrumentation-score-service"]
+ENTRYPOINT ["./instrumentation-score"]

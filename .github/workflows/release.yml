@@ -31,23 +31,23 @@ jobs:
       - name: Build binaries
         run: |
           # Linux
-          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/instrumentation-score-service-linux-amd64 .
-          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bin/instrumentation-score-service-linux-arm64 .
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o bin/instrumentation-score-linux-amd64 .
+          CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -ldflags="-s -w" -o bin/instrumentation-score-linux-arm64 .
           
           # macOS
-          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/instrumentation-score-service-darwin-amd64 .
-          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o bin/instrumentation-score-service-darwin-arm64 .
+          CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags="-s -w" -o bin/instrumentation-score-darwin-amd64 .
+          CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 go build -ldflags="-s -w" -o bin/instrumentation-score-darwin-arm64 .
           
           # Windows
-          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/instrumentation-score-service-windows-amd64.exe .
+          CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags="-s -w" -o bin/instrumentation-score-windows-amd64.exe .
           
           # Create archives
           cd bin
-          tar czf instrumentation-score-service-linux-amd64.tar.gz instrumentation-score-service-linux-amd64
-          tar czf instrumentation-score-service-linux-arm64.tar.gz instrumentation-score-service-linux-arm64
-          tar czf instrumentation-score-service-darwin-amd64.tar.gz instrumentation-score-service-darwin-amd64
-          tar czf instrumentation-score-service-darwin-arm64.tar.gz instrumentation-score-service-darwin-arm64
-          zip instrumentation-score-service-windows-amd64.zip instrumentation-score-service-windows-amd64.exe
+          tar czf instrumentation-score-linux-amd64.tar.gz instrumentation-score-linux-amd64
+          tar czf instrumentation-score-linux-arm64.tar.gz instrumentation-score-linux-arm64
+          tar czf instrumentation-score-darwin-amd64.tar.gz instrumentation-score-darwin-amd64
+          tar czf instrumentation-score-darwin-arm64.tar.gz instrumentation-score-darwin-arm64
+          zip instrumentation-score-windows-amd64.zip instrumentation-score-windows-amd64.exe
           cd ..
 
       - name: Generate checksums

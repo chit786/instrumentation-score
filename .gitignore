@@ -18,8 +18,8 @@
 go.work
 
 # Build artifacts
-instrumentation-score-service
-instrumentation-score-service.exe
+instrumentation-score
+instrumentation-score.exe
 instrumentation-cli
 instrumentation-cli.exe
 instrumentation-scorer

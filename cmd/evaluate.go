@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"instrumentation-score-service/internal/engine"
-	"instrumentation-score-service/internal/formatters"
-	"instrumentation-score-service/internal/loaders"
-	"instrumentation-score-service/internal/storage"
+	"instrumentation-score/internal/engine"
+	"instrumentation-score/internal/formatters"
+	"instrumentation-score/internal/loaders"
+	"instrumentation-score/internal/storage"
 
 	"github.com/spf13/cobra"
 )

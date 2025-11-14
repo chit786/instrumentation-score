@@ -6,8 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"instrumentation-score-service/internal/collectors"
-	"instrumentation-score-service/internal/storage"
+	"instrumentation-score/internal/collectors"
+	"instrumentation-score/internal/storage"
 
 	"github.com/spf13/cobra"
 )

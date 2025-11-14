@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"instrumentation-score-service/internal/engine"
-	"instrumentation-score-service/internal/formatters"
+	"instrumentation-score/internal/engine"
+	"instrumentation-score/internal/formatters"
 )
 
 func TestPrometheusMetrics(t *testing.T) {

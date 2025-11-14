@@ -8,7 +8,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "instrumentation-score-service",
+	Use:   "instrumentation-score",
 	Short: "Evaluate Prometheus metrics quality with automated scoring",
 	Long: `Instrumentation Score Service - A spec-compliant tool for measuring Prometheus metrics quality.
 

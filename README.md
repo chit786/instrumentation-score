@@ -5,7 +5,7 @@
 
 A production-ready tool that analyzes Prometheus metrics against [instrumentation best practices](https://github.com/instrumentation-score/spec), providing actionable insights to improve observability quality, reduce costs, and maintain healthy metrics.
 
-[![CI](https://github.com/instrumentation-score-service/instrumentation-score/workflows/CI/badge.svg)](https://github.com/instrumentation-score-service/instrumentation-score/actions)
+[![CI](https://github.com/instrumentation-score/instrumentation-score/workflows/CI/badge.svg)](https://github.com/instrumentation-score/instrumentation-score/actions)
 [![Go](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://golang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Spec Compliant](https://img.shields.io/badge/Spec-Compliant-green)](https://github.com/instrumentation-score/spec)
@@ -61,43 +61,43 @@ This project bridges the gap, allowing Prometheus users to benefit from the Inst
 ### Installation Options
 
 #### Option 1: Download Pre-built Binary (Recommended)
-Download the latest release for your platform from the [releases page](https://github.com/instrumentation-score-service/instrumentation-score/releases).
+Download the latest release for your platform from the [releases page](https://github.com/instrumentation-score/instrumentation-score/releases).
 
 ```bash
 # Linux
-wget https://github.com/instrumentation-score-service/instrumentation-score/releases/latest/download/instrumentation-score-service-linux-amd64.tar.gz
-tar -xzf instrumentation-score-service-linux-amd64.tar.gz
-chmod +x instrumentation-score-service-linux-amd64
-sudo mv instrumentation-score-service-linux-amd64 /usr/local/bin/instrumentation-score-service
+wget https://github.com/instrumentation-score/instrumentation-score/releases/latest/download/instrumentation-score-linux-amd64.tar.gz
+tar -xzf instrumentation-score-linux-amd64.tar.gz
+chmod +x instrumentation-score-linux-amd64
+sudo mv instrumentation-score-linux-amd64 /usr/local/bin/instrumentation-score
 
 # macOS (Intel)
-wget https://github.com/instrumentation-score-service/instrumentation-score/releases/latest/download/instrumentation-score-service-darwin-amd64.tar.gz
-tar -xzf instrumentation-score-service-darwin-amd64.tar.gz
-chmod +x instrumentation-score-service-darwin-amd64
-sudo mv instrumentation-score-service-darwin-amd64 /usr/local/bin/instrumentation-score-service
+wget https://github.com/instrumentation-score/instrumentation-score/releases/latest/download/instrumentation-score-darwin-amd64.tar.gz
+tar -xzf instrumentation-score-darwin-amd64.tar.gz
+chmod +x instrumentation-score-darwin-amd64
+sudo mv instrumentation-score-darwin-amd64 /usr/local/bin/instrumentation-score
 
 # macOS (Apple Silicon)
-wget https://github.com/instrumentation-score-service/instrumentation-score/releases/latest/download/instrumentation-score-service-darwin-arm64.tar.gz
-tar -xzf instrumentation-score-service-darwin-arm64.tar.gz
-chmod +x instrumentation-score-service-darwin-arm64
-sudo mv instrumentation-score-service-darwin-arm64 /usr/local/bin/instrumentation-score-service
+wget https://github.com/instrumentation-score/instrumentation-score/releases/latest/download/instrumentation-score-darwin-arm64.tar.gz
+tar -xzf instrumentation-score-darwin-arm64.tar.gz
+chmod +x instrumentation-score-darwin-arm64
+sudo mv instrumentation-score-darwin-arm64 /usr/local/bin/instrumentation-score
 ```
 
 #### Option 2: Docker
 ```bash
-docker pull ghcr.io/instrumentation-score-service/instrumentation-score:latest
+docker pull ghcr.io/instrumentation-score/instrumentation-score:latest
 ```
 
 #### Option 3: Build from Source
 ```bash
-git clone https://github.com/instrumentation-score-service/instrumentation-score.git
+git clone https://github.com/instrumentation-score/instrumentation-score.git
 cd instrumentation-score
-go build -o instrumentation-score-service .
+go build -o instrumentation-score .
 ```
 
 ### 1. Verify Installation
 ```bash
-instrumentation-score-service --version
+instrumentation-score --version
 ```
 
 ### 2. Analyze Your Metrics
@@ -110,7 +110,7 @@ export url="https://your-prometheus-instance.com/api/prom"
 export url="http://localhost:9090"
 
 # Collect metrics data grouped by job
-./instrumentation-score-service analyze \
+./instrumentation-score analyze \
   --output-dir ./reports
 ```
 
@@ -127,7 +127,7 @@ reports/job_metrics_20251102_160000/
 
 **Single Job:**
 ```bash
-./instrumentation-score-service evaluate-single-job \
+./instrumentation-score evaluate-single-job \
   --job-file reports/job_metrics_*/api-service.txt \
   --rules rules_config.yaml \
   --output text
@@ -135,7 +135,7 @@ reports/job_metrics_20251102_160000/
 
 **All Jobs with Costs:**
 ```bash
-./instrumentation-score-service evaluate-all-jobs \
+./instrumentation-score evaluate-all-jobs \
   --job-dir reports/job_metrics_20251102_160000/ \
   --rules rules_config.yaml \
   --html-file report.html \
@@ -173,13 +173,13 @@ Get tab completion for commands and flags:
 **Bash:**
 ```bash
 # Load for current session
-source <(./instrumentation-score-service completion bash)
+source <(./instrumentation-score completion bash)
 
 # Install permanently (Linux)
-./instrumentation-score-service completion bash | sudo tee /etc/bash_completion.d/instrumentation-score-service
+./instrumentation-score completion bash | sudo tee /etc/bash_completion.d/instrumentation-score
 
 # Install permanently (macOS with Homebrew)
-./instrumentation-score-service completion bash > $(brew --prefix)/etc/bash_completion.d/instrumentation-score-service
+./instrumentation-score completion bash > $(brew --prefix)/etc/bash_completion.d/instrumentation-score
 ```
 
 **Zsh:**
@@ -188,7 +188,7 @@ source <(./instrumentation-score-service completion bash)
 echo "autoload -U compinit; compinit" >> ~/.zshrc
 
 # Install completion
-./instrumentation-score-service completion zsh > "${fpath[1]}/_instrumentation-score-service"
+./instrumentation-score completion zsh > "${fpath[1]}/_instrumentation-score"
 
 # Restart your shell or reload
 source ~/.zshrc
@@ -197,19 +197,19 @@ source ~/.zshrc
 **Fish:**
 ```bash
 # Load for current session
-./instrumentation-score-service completion fish | source
+./instrumentation-score completion fish | source
 
 # Install permanently
-./instrumentation-score-service completion fish > ~/.config/fish/completions/instrumentation-score-service.fish
+./instrumentation-score completion fish > ~/.config/fish/completions/instrumentation-score.fish
 ```
 
 **PowerShell:**
 ```powershell
 # Load for current session
-instrumentation-score-service completion powershell | Out-String | Invoke-Expression
+instrumentation-score completion powershell | Out-String | Invoke-Expression
 
 # Install permanently (add to PowerShell profile)
-instrumentation-score-service completion powershell > instrumentation-score-service.ps1
+instrumentation-score completion powershell > instrumentation-score.ps1
 ```
 
 **What you get:**
@@ -241,7 +241,7 @@ export AWS_REGION=eu-west-1
 export AWS_PROFILE=production
 
 # Or set it inline
-AWS_PROFILE=production ./instrumentation-score-service analyze --s3-upload
+AWS_PROFILE=production ./instrumentation-score analyze --s3-upload
 ```
 
 **~/.aws/credentials example:**
@@ -270,7 +270,7 @@ No credentials needed when running on AWS infrastructure with IAM roles:
 
 ```bash
 # No AWS credentials needed - automatic!
-./instrumentation-score-service analyze --s3-upload
+./instrumentation-score analyze --s3-upload
 ```
 
 #### 4. AWS SSO / Web Identity Token
@@ -301,7 +301,7 @@ export S3_BUCKET=my-metrics-bucket
 export S3_PREFIX=instrumentation-reports
 
 # Analyze metrics and upload to S3
-./instrumentation-score-service analyze \
+./instrumentation-score analyze \
   --output-dir ./reports \
   --s3-upload
 ```
@@ -323,7 +323,7 @@ Analysis complete!
 **Step 2: Download from S3 and Evaluate (with Upload)**
 ```bash
 # Download, evaluate, and upload results back to S3
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --s3-source \
   --s3-prefix instrumentation-reports/job_metrics_20251102_160000 \
   --output html,json \
@@ -478,7 +478,7 @@ Example:
 Collect metrics from Grafana Cloud and group by job.
 
 ```bash
-./instrumentation-score-service analyze \
+./instrumentation-score analyze \
   --output-dir ./reports \
   --additional-query-filters 'cluster=~"prod-1-27-a1|prod-eu-central"'
 ```
@@ -500,7 +500,7 @@ Collect metrics from Grafana Cloud and group by job.
 Upload generated reports directly to S3:
 
 ```bash
-./instrumentation-score-service analyze \
+./instrumentation-score analyze \
   --output-dir ./reports \
   --s3-upload \
   --s3-bucket my-metrics-bucket \
@@ -514,7 +514,7 @@ export S3_BUCKET=my-metrics-bucket
 export S3_PREFIX=instrumentation-reports
 export AWS_REGION=eu-west-1
 
-./instrumentation-score-service analyze \
+./instrumentation-score analyze \
   --output-dir ./reports \
   --s3-upload
 ```
@@ -539,7 +539,7 @@ s3://my-bucket/instrumentation-reports/
 Evaluate one job's metrics.
 
 ```bash
-./instrumentation-score-service evaluate-single-job \
+./instrumentation-score evaluate-single-job \
   --job-file reports/job_metrics_*/api-service.txt \
   --rules rules_config.yaml \
   --output text|json|html \
@@ -550,7 +550,7 @@ Evaluate one job's metrics.
 Evaluate all jobs in a directory.
 
 ```bash
-./instrumentation-score-service evaluate-all-jobs \
+./instrumentation-score evaluate-all-jobs \
   --job-dir reports/job_metrics_20251102_160000/ \
   --rules rules_config.yaml \
   --output summary.json \
@@ -575,7 +575,7 @@ Evaluate all jobs in a directory.
 Download job metrics from S3 and evaluate:
 
 ```bash
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --s3-source \
   --s3-bucket my-metrics-bucket \
   --s3-prefix instrumentation-reports/job_metrics_20251102_160000 \
@@ -592,7 +592,7 @@ export S3_BUCKET=my-metrics-bucket
 export S3_PREFIX=instrumentation-reports/job_metrics_20251102_160000
 export AWS_REGION=eu-west-1
 
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --s3-source \
   --output html \
   --html-file dashboard.html
@@ -610,7 +610,7 @@ export AWS_REGION=eu-west-1
 Upload evaluation results (reports, dashboards) to S3 for centralized storage:
 
 ```bash
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-dir reports/job_metrics_20251102_160000/ \
   --output html,json \
   --html-file dashboard.html \
@@ -629,7 +629,7 @@ export S3_BUCKET=my-metrics-bucket
 export S3_PREFIX=instrumentation-reports
 export AWS_REGION=eu-west-1
 
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-dir reports/job_metrics_20251102_160000/ \
   --output html,json \
   --html-file dashboard.html \
@@ -677,7 +677,7 @@ s3://my-bucket/instrumentation-reports/evaluations/prod-20251102/
 Legacy command for evaluating raw metrics files.
 
 ```bash
-./instrumentation-score-service evaluate-metrics \
+./instrumentation-score evaluate-metrics \
   --data-dir ./testdata \
   --rules rules_config.yaml \
   --output json
@@ -777,7 +777,7 @@ http_requests_total{method="GET"} 1234
 **Step 3: Test Your Rule:**
 
 ```bash
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-file reports/job_metrics_*/api-service.txt \
   --rules rules_config.yaml \
   --output text
@@ -974,7 +974,7 @@ conditions:
 echo "test-job|my_metric_total|method,status|150" > test_metric.txt
 
 # Evaluate
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-file test_metric.txt \
   --rules rules_config.yaml \
   --output text
@@ -986,7 +986,7 @@ echo "test-job|my_metric_total|method,status|150" > test_metric.txt
 yamllint rules_config.yaml
 
 # Test rule loading
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-file test_metric.txt \
   --rules rules_config.yaml \
   --output json | jq '.rules'
@@ -995,13 +995,13 @@ yamllint rules_config.yaml
 **3. Compare Before/After:**
 ```bash
 # Baseline score
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-dir reports/ \
   --rules rules_config.yaml \
   --output baseline.json
 
 # Add new rule, re-evaluate
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-dir reports/ \
   --rules rules_config.yaml \
   --output updated.json
@@ -1142,7 +1142,7 @@ instrumentation_score{service="api-service"} 97.63
 ### 1. CI/CD Quality Gates
 ```bash
 # Fail build if score drops below 80%
-score=$(./instrumentation-score-service evaluate-single-job \
+score=$(./instrumentation-score evaluate-single-job \
   --job-file metrics.txt \
   --rules rules_config.yaml \
   --output json | jq '.instrumentation_score')
@@ -1156,7 +1156,7 @@ fi
 ### 2. Cost Monitoring
 ```bash
 # Generate weekly cost reports
-./instrumentation-score-service evaluate-all-jobs \
+./instrumentation-score evaluate-all-jobs \
   --job-dir reports/job_metrics_latest/ \
   --rules rules_config.yaml \
   --output weekly-report.json \
@@ -1170,7 +1170,7 @@ fi
 Generate HTML reports for each team:
 ```bash
 # Frontend team
-./instrumentation-score-service evaluate-all-jobs \
+./instrumentation-score evaluate-all-jobs \
   --job-dir reports/job_metrics_latest/ \
   --rules rules_config.yaml \
   --html-file frontend-dashboard.html \
@@ -1181,7 +1181,7 @@ Generate HTML reports for each team:
 ### 4. Prometheus Integration
 ```bash
 # Export scores to Prometheus
-./instrumentation-score-service evaluate-all-jobs \
+./instrumentation-score evaluate-all-jobs \
   --job-dir reports/job_metrics_latest/ \
   --rules rules_config.yaml \
   --output prometheus | curl -X POST http://pushgateway:9091/metrics/job/instrumentation_score
@@ -1240,7 +1240,7 @@ make help
 
 ### Build Image
 ```bash
-docker build -t instrumentation-score-service .
+docker build -t instrumentation-score .
 ```
 
 ### Run
@@ -1248,7 +1248,7 @@ docker build -t instrumentation-score-service .
 docker run -v $(pwd)/reports:/reports \
   -e login="user:api_key" \
   -e url="https://your-prometheus-instance.com/api/prom" \
-  instrumentation-score-service analyze \
+  instrumentation-score analyze \
   --output-dir /reports
 ```
 
@@ -1295,7 +1295,7 @@ docker run -v $(pwd)/reports:/reports \
 ### 1. Regular Collection
 Run `analyze` daily or weekly to track trends:
 ```bash
-0 2 * * * /path/to/instrumentation-score-service analyze --output-dir /reports/$(date +\%Y\%m\%d)
+0 2 * * * /path/to/instrumentation-score analyze --output-dir /reports/$(date +\%Y\%m\%d)
 ```
 
 ### 2. Set Realistic Thresholds
@@ -1396,8 +1396,8 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
 
 ### Ways to Contribute
 
-- 🐛 [Report bugs](https://github.com/instrumentation-score-service/instrumentation-score/issues/new?template=bug_report.md)
-- 💡 [Request features](https://github.com/instrumentation-score-service/instrumentation-score/issues/new?template=feature_request.md)
+- 🐛 [Report bugs](https://github.com/instrumentation-score/instrumentation-score/issues/new?template=bug_report.md)
+- 💡 [Request features](https://github.com/instrumentation-score/instrumentation-score/issues/new?template=feature_request.md)
 - 📖 Improve documentation
 - 🔧 Submit pull requests
 - ⭐ Star the project if you find it useful!
@@ -1406,8 +1406,8 @@ We welcome contributions from the community! Whether you're fixing bugs, adding 
 
 1. Read our [Contributing Guide](CONTRIBUTING.md)
 2. Check out our [Code of Conduct](CODE_OF_CONDUCT.md)
-3. Look for ["good first issue"](https://github.com/instrumentation-score-service/instrumentation-score/labels/good%20first%20issue) labels
-4. Join the conversation in [Discussions](https://github.com/instrumentation-score-service/instrumentation-score/discussions)
+3. Look for ["good first issue"](https://github.com/instrumentation-score/instrumentation-score/labels/good%20first%20issue) labels
+4. Join the conversation in [Discussions](https://github.com/instrumentation-score/instrumentation-score/discussions)
 
 For detailed contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -1416,8 +1416,8 @@ For detailed contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 ## 🆘 Support
 
 - 📖 [Instrumentation Score Spec](https://github.com/instrumentation-score/spec)
-- 🐛 [Report Issues](https://github.com/instrumentation-score-service/instrumentation-score/issues)
-- 💬 [Discussions](https://github.com/instrumentation-score-service/instrumentation-score/discussions)
+- 🐛 [Report Issues](https://github.com/instrumentation-score/instrumentation-score/issues)
+- 💬 [Discussions](https://github.com/instrumentation-score/instrumentation-score/discussions)
 
 ---
 

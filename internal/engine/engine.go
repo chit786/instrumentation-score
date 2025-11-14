@@ -6,7 +6,7 @@ import (
 	"regexp"
 	"strings"
 
-	"instrumentation-score-service/internal/loaders"
+	"instrumentation-score/internal/loaders"
 
 	"gopkg.in/yaml.v3"
 )

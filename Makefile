@@ -46,7 +46,7 @@ help:
 
 # Build the binary
 build:
-	go build -o instrumentation-score-service .
+	go build -o instrumentation-score .
 
 # Run all tests
 test:
@@ -60,7 +60,7 @@ test-coverage:
 
 # Clean build artifacts
 clean:
-	rm -f instrumentation-score-service
+	rm -f instrumentation-score
 	rm -f coverage.out coverage.html
 	rm -f *.json
 	go clean
@@ -76,20 +76,20 @@ install-completion: build
 	@SHELL_NAME=$$(basename $$SHELL); \
 	if [ "$$SHELL_NAME" = "bash" ]; then \
 		if [ -d "$$(brew --prefix 2>/dev/null)/etc/bash_completion.d" ]; then \
-			./instrumentation-score-service completion bash > $$(brew --prefix)/etc/bash_completion.d/instrumentation-score-service; \
+			./instrumentation-score completion bash > $$(brew --prefix)/etc/bash_completion.d/instrumentation-score; \
 			echo "✅ Bash completion installed to $$(brew --prefix)/etc/bash_completion.d/"; \
-			echo "   Restart your shell or run: source $$(brew --prefix)/etc/bash_completion.d/instrumentation-score-service"; \
+			echo "   Restart your shell or run: source $$(brew --prefix)/etc/bash_completion.d/instrumentation-score"; \
 		elif [ -d "/etc/bash_completion.d" ]; then \
-			sudo ./instrumentation-score-service completion bash > /etc/bash_completion.d/instrumentation-score-service; \
+			sudo ./instrumentation-score completion bash > /etc/bash_completion.d/instrumentation-score; \
 			echo "✅ Bash completion installed to /etc/bash_completion.d/"; \
-			echo "   Restart your shell or run: source /etc/bash_completion.d/instrumentation-score-service"; \
+			echo "   Restart your shell or run: source /etc/bash_completion.d/instrumentation-score"; \
 		else \
 			echo "❌ Bash completion directory not found"; \
-			echo "   Run manually: source <(./instrumentation-score-service completion bash)"; \
+			echo "   Run manually: source <(./instrumentation-score completion bash)"; \
 		fi; \
 	elif [ "$$SHELL_NAME" = "zsh" ]; then \
 		mkdir -p ~/.zsh/completion; \
-		./instrumentation-score-service completion zsh > ~/.zsh/completion/_instrumentation-score-service; \
+		./instrumentation-score completion zsh > ~/.zsh/completion/_instrumentation-score; \
 		if ! grep -q "fpath=(~/.zsh/completion" ~/.zshrc 2>/dev/null; then \
 			echo 'fpath=(~/.zsh/completion $$fpath)' >> ~/.zshrc; \
 			echo 'autoload -U compinit; compinit' >> ~/.zshrc; \
@@ -98,13 +98,13 @@ install-completion: build
 		echo "   Restart your shell or run: source ~/.zshrc"; \
 	elif [ "$$SHELL_NAME" = "fish" ]; then \
 		mkdir -p ~/.config/fish/completions; \
-		./instrumentation-score-service completion fish > ~/.config/fish/completions/instrumentation-score-service.fish; \
+		./instrumentation-score completion fish > ~/.config/fish/completions/instrumentation-score.fish; \
 		echo "✅ Fish completion installed to ~/.config/fish/completions/"; \
-		echo "   Restart your shell or run: source ~/.config/fish/completions/instrumentation-score-service.fish"; \
+		echo "   Restart your shell or run: source ~/.config/fish/completions/instrumentation-score.fish"; \
 	else \
 		echo "❌ Unsupported shell: $$SHELL_NAME"; \
 		echo "   Supported shells: bash, zsh, fish"; \
-		echo "   Run manually: ./instrumentation-score-service completion --help"; \
+		echo "   Run manually: ./instrumentation-score completion --help"; \
 	fi
 
 # Analyze Prometheus metrics
@@ -128,12 +128,12 @@ analyze: build
 	fi; \
 	if [ -n '$(filters)' ]; then \
 		echo 'Using filters: $(filters)'; \
-		./instrumentation-score-service analyze \
+		./instrumentation-score analyze \
 			--output-dir ./reports \
 			--additional-query-filters "$(filters)" \
 			$$RETRY_FLAG; \
 	else \
-		./instrumentation-score-service analyze \
+		./instrumentation-score analyze \
 			--output-dir ./reports \
 			$$RETRY_FLAG; \
 	fi
@@ -149,7 +149,7 @@ evaluate: build
 	fi
 	@if [ -f "$(job)" ]; then \
 		HTML_FILE=$$(basename $(job) .txt)-report.html; \
-		./instrumentation-score-service evaluate \
+		./instrumentation-score evaluate \
 			--job-file $(job) \
 			--rules rules_config.yaml \
 			--output html \
@@ -159,7 +159,7 @@ evaluate: build
 	elif [ -d "$(job)" ]; then \
 		HTML_FILE=all-jobs-report.html; \
 		JSON_FILE=all-jobs-report.json; \
-		./instrumentation-score-service evaluate \
+		./instrumentation-score evaluate \
 			--job-dir $(job) \
 			--rules rules_config.yaml \
 			--output json,html \
