@@ -80,12 +80,12 @@ Modes:
 
 Examples:
   # Evaluate single job with HTML output
-  instrumentation-score-service evaluate \
+  instrumentation-score evaluate \
     --job-file reports/job_metrics_*/api-service.txt \
     --output html --html-file report.html
 
   # Evaluate all jobs with multiple outputs
-  instrumentation-score-service evaluate \
+  instrumentation-score evaluate \
     --job-dir reports/job_metrics_20251102_160000/ \
     --output json,html \
     --json-file results.json \
@@ -93,7 +93,7 @@ Examples:
     --show-costs --cost-unit-price 0.00615
 
   # Text output to console (default)
-  instrumentation-score-service evaluate \
+  instrumentation-score evaluate \
     --job-file reports/job_metrics_*/api-service.txt`,
 	Run: func(cmd *cobra.Command, args []string) {
 		runEvaluate()

@@ -16,30 +16,30 @@ Implements the Instrumentation Score specification (https://github.com/instrumen
 adapted for Prometheus metrics.
 
 Commands:
-  analyze     - Collect metrics from Grafana Cloud Prometheus grouped by job
+  analyze     - Collect metrics from Prometheus where grouped by job
   evaluate    - Evaluate job metrics with scoring and cost analysis
   completion  - Generate shell completion scripts
 
 Workflow:
-  1. Collect: instrumentation-score-service analyze --output-dir ./reports
-  2. Evaluate: instrumentation-score-service evaluate --job-dir ./reports/job_metrics_*/`,
+  1. Collect: instrumentation-score analyze --output-dir ./reports
+  2. Evaluate: instrumentation-score evaluate --job-dir ./reports/job_metrics_*/`,
 }
 
 var completionCmd = &cobra.Command{
 	Use:   "completion [bash|zsh|fish|powershell]",
 	Short: "Generate shell completion script",
-	Long: `Generate shell completion script for instrumentation-score-service.
+	Long: `Generate shell completion script for instrumentation-score.
 
 To load completions:
 
 Bash:
-  $ source <(instrumentation-score-service completion bash)
+  $ source <(instrumentation-score completion bash)
 
   # To load completions for each session, execute once:
   # Linux:
-  $ instrumentation-score-service completion bash > /etc/bash_completion.d/instrumentation-score-service
+  $ instrumentation-score completion bash > /etc/bash_completion.d/instrumentation-score
   # macOS:
-  $ instrumentation-score-service completion bash > $(brew --prefix)/etc/bash_completion.d/instrumentation-score-service
+  $ instrumentation-score completion bash > $(brew --prefix)/etc/bash_completion.d/instrumentation-score
 
 Zsh:
   # If shell completion is not already enabled in your environment,
@@ -47,21 +47,21 @@ Zsh:
   $ echo "autoload -U compinit; compinit" >> ~/.zshrc
 
   # To load completions for each session, execute once:
-  $ instrumentation-score-service completion zsh > "${fpath[1]}/_instrumentation-score-service"
+  $ instrumentation-score completion zsh > "${fpath[1]}/_instrumentation-score"
 
   # You will need to start a new shell for this setup to take effect.
 
 Fish:
-  $ instrumentation-score-service completion fish | source
+  $ instrumentation-score completion fish | source
 
   # To load completions for each session, execute once:
-  $ instrumentation-score-service completion fish > ~/.config/fish/completions/instrumentation-score-service.fish
+  $ instrumentation-score completion fish > ~/.config/fish/completions/instrumentation-score.fish
 
 PowerShell:
-  PS> instrumentation-score-service completion powershell | Out-String | Invoke-Expression
+  PS> instrumentation-score completion powershell | Out-String | Invoke-Expression
 
   # To load completions for every new session, run:
-  PS> instrumentation-score-service completion powershell > instrumentation-score-service.ps1
+  PS> instrumentation-score completion powershell > instrumentation-score.ps1
   # and source this file from your PowerShell profile.
 `,
 	DisableFlagsInUseLine: true,

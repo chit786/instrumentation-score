@@ -132,7 +132,7 @@ http_requests_total{method="GET",status="200"} 1234
 ### Step 3: Test Your Rule
 
 ```bash
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-file reports/job_metrics_*/api-service.txt \
   --rules rules_config.yaml \
   --output text
@@ -483,12 +483,12 @@ validators:
 **Usage:**
 ```bash
 # Frontend team
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-dir reports/frontend/ \
   --rules rules_frontend.yaml
 
 # Backend team
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-dir reports/backend/ \
   --rules rules_backend.yaml
 ```
@@ -591,14 +591,14 @@ echo "test-job|http_requests|method,status|150" > test_bad.txt
 
 **Test Rule:**
 ```bash
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-file test_good.txt \
   --rules rules_config.yaml \
   --output text
 
 # Expected: 100% score
 
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-file test_bad.txt \
   --rules rules_config.yaml \
   --output text
@@ -623,7 +623,7 @@ yamllint rules_config.yaml
 
 ```bash
 # Verify rules are loaded correctly
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-file test.txt \
   --rules rules_config.yaml \
   --output json | jq '.rules[] | {rule_id, impact, validators: .validators | length}'
@@ -640,7 +640,7 @@ yamllint rules_config.yaml
 
 ```bash
 # Baseline score
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-dir reports/ \
   --rules rules_config.yaml \
   --output baseline.json
@@ -648,7 +648,7 @@ yamllint rules_config.yaml
 # Add new rule to rules_config.yaml
 
 # Re-evaluate
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-dir reports/ \
   --rules rules_config.yaml \
   --output updated.json
@@ -675,7 +675,7 @@ set -e
 echo "Testing rules configuration..."
 
 # Test 1: Valid metrics should pass
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-file testdata/valid_metrics.txt \
   --rules rules_config.yaml \
   --output json > result.json
@@ -689,7 +689,7 @@ else
 fi
 
 # Test 2: Invalid metrics should fail
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-file testdata/invalid_metrics.txt \
   --rules rules_config.yaml \
   --output json > result.json
@@ -1021,7 +1021,7 @@ git push origin v1.2.0
 
 ```bash
 # Test new rules against staging data
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-dir reports/staging/ \
   --rules rules_config_new.yaml \
   --output staging-test.json
@@ -1037,7 +1037,7 @@ cp rules_config_new.yaml rules_config.yaml
 
 ```bash
 # Track score trends over time
-./instrumentation-score-service evaluate \
+./instrumentation-score evaluate \
   --job-dir reports/$(date +%Y%m%d)/ \
   --rules rules_config.yaml \
   --output daily-scores.json

@@ -37,23 +37,23 @@ Examples:
   # For local/unauthenticated Prometheus
   export url="http://localhost:9090"
   
-  instrumentation-score-service analyze \
+  instrumentation-score analyze \
     --output-dir ./reports
 
   # For authenticated Prometheus
   export login="user:api_key"
   export url="https://your-prometheus-instance.com/api/prom"
   
-  instrumentation-score-service analyze \
+  instrumentation-score analyze \
     --output-dir ./reports
 
   # With query filters
-  instrumentation-score-service analyze \
+  instrumentation-score analyze \
     --output-dir ./reports \
     --additional-query-filters 'cluster=~"prod.*",environment="production"'
 
   # Multiple filters
-  instrumentation-score-service analyze \
+  instrumentation-score analyze \
     --output-dir ./reports \
     --additional-query-filters 'cluster=~"prod-1-27-a1|prod-1-27-a1-eu-central-1",region="us-east-1"'`,
 	Run: func(cmd *cobra.Command, args []string) {
