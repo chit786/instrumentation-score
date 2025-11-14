@@ -10,12 +10,12 @@ import (
 
 // AnalysisUploadConfig contains configuration for uploading analysis results
 type AnalysisUploadConfig struct {
-	Bucket       string
-	Prefix       string
-	Region       string
+	Bucket        string
+	Prefix        string
+	Region        string
 	JobMetricsDir string
-	ErrorFile    string
-	Timestamp    string
+	ErrorFile     string
+	Timestamp     string
 }
 
 // EvaluationUploadConfig contains configuration for uploading evaluation results
@@ -136,8 +136,6 @@ func UploadEvaluationResults(config EvaluationUploadConfig) error {
 		config.Manifest.Timestamp = time.Now().Format(time.RFC3339)
 	}
 
-	uploadedFiles := []string{}
-
 	// Upload JSON if provided
 	if config.JSONFile != "" && contains(config.OutputFormats, "json") {
 		s3Key := fmt.Sprintf("%s/report.json", s3Prefix)
@@ -145,7 +143,6 @@ func UploadEvaluationResults(config EvaluationUploadConfig) error {
 			return fmt.Errorf("failed to upload JSON: %w", err)
 		}
 		config.Manifest.Files.JSON = s3Key
-		uploadedFiles = append(uploadedFiles, s3Client.GetS3URI(s3Key))
 		fmt.Printf("✅ Uploaded JSON report to %s\n", s3Client.GetS3URI(s3Key))
 	}
 
@@ -156,7 +153,6 @@ func UploadEvaluationResults(config EvaluationUploadConfig) error {
 			return fmt.Errorf("failed to upload HTML: %w", err)
 		}
 		config.Manifest.Files.HTML = s3Key
-		uploadedFiles = append(uploadedFiles, s3Client.GetS3URI(s3Key))
 		fmt.Printf("✅ Uploaded HTML dashboard to %s\n", s3Client.GetS3URI(s3Key))
 	}
 
@@ -167,7 +163,6 @@ func UploadEvaluationResults(config EvaluationUploadConfig) error {
 			return fmt.Errorf("failed to upload Prometheus metrics: %w", err)
 		}
 		config.Manifest.Files.Prometheus = s3Key
-		uploadedFiles = append(uploadedFiles, s3Client.GetS3URI(s3Key))
 		fmt.Printf("✅ Uploaded Prometheus metrics to %s\n", s3Client.GetS3URI(s3Key))
 	}
 
@@ -204,4 +199,3 @@ func contains(slice []string, item string) bool {
 	}
 	return false
 }
-

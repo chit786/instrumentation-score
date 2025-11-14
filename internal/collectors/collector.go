@@ -220,16 +220,26 @@ func WritePerJobFiles(outputDir string, allData []JobMetricData) error {
 				fmt.Printf("WARNING: %s\n", errMsg)
 				continue
 			}
-			jobFiles[data.Job] = file
-			writer := bufio.NewWriter(file)
-			jobWriters[data.Job] = writer
-			writer.WriteString("JOB|METRIC_NAME|LABELS|CARDINALITY\n")
+		jobFiles[data.Job] = file
+		writer := bufio.NewWriter(file)
+		jobWriters[data.Job] = writer
+		if _, err := writer.WriteString("JOB|METRIC_NAME|LABELS|CARDINALITY\n"); err != nil {
+			errMsg := fmt.Sprintf("failed to write header for job %s: %v", data.Job, err)
+			writeErrors = append(writeErrors, errMsg)
+			skippedJobs[data.Job] = true
+			fmt.Printf("WARNING: %s\n", errMsg)
+			continue
+		}
 		}
 
-		writer := jobWriters[data.Job]
-		labelsStr := strings.Join(data.Labels, ",")
-		line := fmt.Sprintf("%s|%s|%s|%s\n", data.Job, data.MetricName, labelsStr, data.Cardinality)
-		writer.WriteString(line)
+	writer := jobWriters[data.Job]
+	labelsStr := strings.Join(data.Labels, ",")
+	line := fmt.Sprintf("%s|%s|%s|%s\n", data.Job, data.MetricName, labelsStr, data.Cardinality)
+	if _, err := writer.WriteString(line); err != nil {
+		errMsg := fmt.Sprintf("failed to write data for job %s: %v", data.Job, err)
+		writeErrors = append(writeErrors, errMsg)
+		fmt.Printf("WARNING: %s\n", errMsg)
+	}
 	}
 
 	if len(writeErrors) > 0 {
@@ -250,14 +260,18 @@ func WriteErrorsToFile(filename string, errors []ErrorRecord) error {
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
 
-	writer.WriteString("TIMESTAMP|METRIC_NAME|OPERATION|ERROR\n")
+	if _, err := writer.WriteString("TIMESTAMP|METRIC_NAME|OPERATION|ERROR\n"); err != nil {
+		return fmt.Errorf("failed to write error file header: %w", err)
+	}
 	for _, e := range errors {
 		line := fmt.Sprintf("%s|%s|%s|%s\n",
 			e.Timestamp.Format("2006-01-02 15:04:05"),
 			e.MetricName,
 			e.Operation,
 			e.Error)
-		writer.WriteString(line)
+		if _, err := writer.WriteString(line); err != nil {
+			return fmt.Errorf("failed to write error line: %w", err)
+		}
 	}
 
 	return nil

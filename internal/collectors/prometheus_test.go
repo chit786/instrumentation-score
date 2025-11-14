@@ -51,7 +51,7 @@ func TestPrometheusClient_GetAllMetricNames(t *testing.T) {
 				if r.URL.Path != "/api/v1/label/__name__/values" {
 					t.Errorf("unexpected path: %s", r.URL.Path)
 				}
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -113,7 +113,7 @@ func TestPrometheusClient_GetJobsForMetric(t *testing.T) {
 				if r.URL.Path != "/api/v1/query" {
 					t.Errorf("unexpected path: %s", r.URL.Path)
 				}
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -177,7 +177,7 @@ func TestPrometheusClient_GetCardinality(t *testing.T) {
 				if r.URL.Path != "/api/v1/query" {
 					t.Errorf("unexpected path: %s", r.URL.Path)
 				}
-				json.NewEncoder(w).Encode(tt.response)
+				_ = json.NewEncoder(w).Encode(tt.response)
 			}))
 			defer server.Close()
 
@@ -247,12 +247,12 @@ func TestPrometheusClient_GetLabels(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				// Respond to query endpoint
 				if r.URL.Path == "/api/v1/query" {
-					json.NewEncoder(w).Encode(tt.response)
+					_ = json.NewEncoder(w).Encode(tt.response)
 					return
 				}
 				// Fallback to labels API
 				if r.URL.Path == "/api/v1/labels" {
-					json.NewEncoder(w).Encode(map[string]interface{}{
+					_ = json.NewEncoder(w).Encode(map[string]interface{}{
 						"data": []string{"method", "status", "job"},
 					})
 					return
@@ -281,7 +281,7 @@ func TestPrometheusClient_ErrorHandling(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			callCount++
 			w.WriteHeader(http.StatusTooManyRequests)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": "rate limit exceeded",
 			})
 		}))
@@ -298,7 +298,7 @@ func TestPrometheusClient_ErrorHandling(t *testing.T) {
 	t.Run("handles HTTP errors", func(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusInternalServerError)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": "internal server error",
 			})
 		}))
@@ -320,12 +320,12 @@ func TestPrometheusClient_RetryLogic(t *testing.T) {
 			count := atomic.AddInt32(&attemptCount, 1)
 			if count < 3 {
 				w.WriteHeader(http.StatusBadGateway)
-				json.NewEncoder(w).Encode(map[string]interface{}{
+				_ = json.NewEncoder(w).Encode(map[string]interface{}{
 					"error": "connection refused",
 				})
 				return
 			}
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"data": []string{"metric1", "metric2"},
 			})
 		}))
@@ -352,7 +352,7 @@ func TestPrometheusClient_RetryLogic(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&attemptCount, 1)
 			w.WriteHeader(http.StatusBadGateway)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"error": "connection refused",
 			})
 		}))
@@ -375,7 +375,7 @@ func TestPrometheusClient_RetryLogic(t *testing.T) {
 		var attemptCount int32
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&attemptCount, 1)
-			json.NewEncoder(w).Encode(map[string]interface{}{
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
 				"data": []string{"metric1"},
 			})
 		}))

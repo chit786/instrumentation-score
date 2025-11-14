@@ -100,7 +100,7 @@ rules:
   validators:
     - name: "test_format_check"
       type: "format"
-      data_source: "cardinality"
+      data_source: "labels"
       conditions:
         - field: "metric_name"
           operator: "matches"
@@ -119,11 +119,11 @@ rules:
 	}
 	tmpRulesFile.Close()
 
-	// Create test data file
-	dataContent := `http_requests_total|1500
-http_request_duration_seconds|2500
-memory_usage_bytes|500
-InvalidMetricName|100
+	// Create test data file (labels format: metric_name|labels)
+	dataContent := `"http_requests_total"|"method,status,endpoint"
+"http_request_duration_seconds"|"method,endpoint"
+"memory_usage_bytes"|"instance"
+"InvalidMetricName"|"status"
 `
 	tmpDataFile, err := os.CreateTemp("", "test_data_*.txt")
 	if err != nil {
@@ -144,7 +144,7 @@ InvalidMetricName|100
 
 	// Evaluate rules
 	dataFiles := map[string]string{
-		"cardinality": tmpDataFile.Name(),
+		"labels": tmpDataFile.Name(),
 	}
 
 	results, err := engine.EvaluateRules(dataFiles)

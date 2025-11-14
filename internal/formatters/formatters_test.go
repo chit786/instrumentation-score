@@ -33,7 +33,9 @@ func TestPrometheusMetrics(t *testing.T) {
 
 	// Read output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Fatalf("Failed to read output: %v", err)
+	}
 	output := buf.String()
 
 	// Verify output contains expected metrics
@@ -74,7 +76,9 @@ func TestJSON(t *testing.T) {
 
 	// Read output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Fatalf("Failed to read output: %v", err)
+	}
 	jsonOutput := buf.String()
 
 	// Verify JSON structure - check for key-value pairs with flexible spacing
@@ -126,7 +130,9 @@ func TestText(t *testing.T) {
 
 	// Read output
 	var buf bytes.Buffer
-	buf.ReadFrom(r)
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Fatalf("Failed to read output: %v", err)
+	}
 	textOutput := buf.String()
 
 	// Verify text output
@@ -174,7 +180,9 @@ func TestGetScoreCategory(t *testing.T) {
 			os.Stdout = old
 
 			var buf bytes.Buffer
-			buf.ReadFrom(r)
+			if _, err := buf.ReadFrom(r); err != nil {
+				t.Fatalf("Failed to read output: %v", err)
+			}
 			textOutput := buf.String()
 
 			expectedCategory := fmt.Sprintf("Overall Score: %.1f/100 (%s)", tt.score, tt.expected)

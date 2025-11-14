@@ -1,0 +1,36 @@
+linters-settings:
+  errcheck:
+    check-type-assertions: false
+    check-blank: false
+  staticcheck:
+    checks: ["all", "-SA1019"] # Disable SA1019 (deprecation warnings) for AWS SDK v1
+
+linters:
+  enable:
+    - errcheck
+    - gosimple
+    - govet
+    - ineffassign
+    - staticcheck
+    - typecheck
+    - unused
+
+issues:
+  exclude-rules:
+    # Exclude some linters from running on tests files
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+    # Ignore AWS SDK v1 deprecation warnings (migration to v2 is out of scope)
+    - text: "SA1019.*aws-sdk-go"
+      linters:
+        - staticcheck
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+

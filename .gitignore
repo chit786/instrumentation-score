@@ -98,6 +98,9 @@ temp_metrics.json
 converted_*.json
 metrics_count.txt
 
+# Keep demo video for README but exclude from builds
+!docs/gify.mov
+
 # Test output files
 test-jobs-report.json
 test-jobs-report.html

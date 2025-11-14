@@ -119,10 +119,8 @@ func LoadJobMetricReport(filename string) ([]JobMetricData, error) {
 	var data []JobMetricData
 	scanner := bufio.NewScanner(file)
 
-	// Skip header line
-	if scanner.Scan() {
-		// JOB|METRIC_NAME|LABELS|CARDINALITY
-	}
+	// Skip header line (format: JOB|METRIC_NAME|LABELS|CARDINALITY)
+	scanner.Scan()
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
