@@ -323,29 +323,33 @@ func WritePerJobFiles(outputDir string, allData []JobMetricData) error {
 				fmt.Printf("WARNING: %s\n", errMsg)
 				continue
 			}
-			jobFiles[data.Job] = file
-			writer := bufio.NewWriter(file)
-			jobWriters[data.Job] = writer
-			writer.WriteString("JOB|METRIC_NAME|LABELS|CARDINALITY|LABEL_CARDINALITY\n")
+		jobFiles[data.Job] = file
+		writer := bufio.NewWriter(file)
+		jobWriters[data.Job] = writer
+		if _, err := writer.WriteString("JOB|METRIC_NAME|LABELS|CARDINALITY|LABEL_CARDINALITY\n"); err != nil {
+			return fmt.Errorf("failed to write header: %w", err)
 		}
+	}
 
-		writer := jobWriters[data.Job]
-		labelsStr := strings.Join(data.Labels, ",")
+	writer := jobWriters[data.Job]
+	labelsStr := strings.Join(data.Labels, ",")
 
-		// Format per-label cardinality as label1:count1,label2:count2,...
-		var labelCardinalityStr string
-		if data.LabelCardinality != nil && len(data.LabelCardinality) > 0 {
-			var parts []string
-			for _, label := range data.Labels {
-				if count, ok := data.LabelCardinality[label]; ok {
-					parts = append(parts, fmt.Sprintf("%s:%d", label, count))
-				}
+	// Format per-label cardinality as label1:count1,label2:count2,...
+	var labelCardinalityStr string
+	if len(data.LabelCardinality) > 0 {
+		var parts []string
+		for _, label := range data.Labels {
+			if count, ok := data.LabelCardinality[label]; ok {
+				parts = append(parts, fmt.Sprintf("%s:%d", label, count))
 			}
-			labelCardinalityStr = strings.Join(parts, ",")
 		}
+		labelCardinalityStr = strings.Join(parts, ",")
+	}
 
-		line := fmt.Sprintf("%s|%s|%s|%s|%s\n", data.Job, data.MetricName, labelsStr, data.Cardinality, labelCardinalityStr)
-		writer.WriteString(line)
+	line := fmt.Sprintf("%s|%s|%s|%s|%s\n", data.Job, data.MetricName, labelsStr, data.Cardinality, labelCardinalityStr)
+	if _, err := writer.WriteString(line); err != nil {
+		return fmt.Errorf("failed to write metric data: %w", err)
+	}
 	}
 
 	if len(writeErrors) > 0 {
@@ -366,14 +370,18 @@ func WriteErrorsToFile(filename string, errors []ErrorRecord) error {
 	writer := bufio.NewWriter(file)
 	defer writer.Flush()
 
-	writer.WriteString("TIMESTAMP|METRIC_NAME|OPERATION|ERROR\n")
+	if _, err := writer.WriteString("TIMESTAMP|METRIC_NAME|OPERATION|ERROR\n"); err != nil {
+		return fmt.Errorf("failed to write header: %w", err)
+	}
 	for _, e := range errors {
 		line := fmt.Sprintf("%s|%s|%s|%s\n",
 			e.Timestamp.Format("2006-01-02 15:04:05"),
 			e.MetricName,
 			e.Operation,
 			e.Error)
-		writer.WriteString(line)
+		if _, err := writer.WriteString(line); err != nil {
+			return fmt.Errorf("failed to write error line: %w", err)
+		}
 	}
 
 	return nil

@@ -662,11 +662,11 @@ func generateHTMLReport(report AllJobsReport, files []string) {
 				}
 			}
 
-			// Serialize label cardinality to JSON
-			var labelCardinalityJSON string
-			if metric.LabelCardinality != nil && len(metric.LabelCardinality) > 0 {
-				if jsonBytes, err := json.Marshal(metric.LabelCardinality); err == nil {
-					labelCardinalityJSON = string(jsonBytes)
+		// Serialize label cardinality to JSON
+		var labelCardinalityJSON string
+		if len(metric.LabelCardinality) > 0 {
+			if jsonBytes, err := json.Marshal(metric.LabelCardinality); err == nil {
+				labelCardinalityJSON = string(jsonBytes)
 				}
 			}
 

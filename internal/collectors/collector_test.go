@@ -220,10 +220,10 @@ func TestNewCollector(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := NewCollector(tt.baseURL, tt.login, tt.queryFilters)
 			if collector == nil {
-				t.Error("NewCollector() returned nil")
+				t.Fatal("NewCollector() returned nil")
 			}
 			if collector.client == nil {
-				t.Error("collector.client is nil")
+				t.Fatal("collector.client is nil")
 			}
 			if collector.queryFilters != tt.queryFilters {
 				t.Errorf("collector.queryFilters = %v, want %v", collector.queryFilters, tt.queryFilters)
