@@ -13,11 +13,9 @@ A production-ready tool that analyzes Prometheus metrics against [instrumentatio
 
 ## 🎬 Demo
 
-<video src="https://github.com/chit786/instrumentation-score/raw/main/docs/gify.mov" controls width="100%"></video>
+[![Demo](./docs/preview.png)](./docs/demo.mp4)
 
 *Demo showing metrics analysis, scoring, and HTML report generation*
-
-> **Note:** If the video doesn't play, you can [download it here](docs/gify.mov) or view it directly in the repository.
 
 ---
 
