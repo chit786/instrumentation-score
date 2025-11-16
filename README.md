@@ -13,7 +13,7 @@ A production-ready tool that analyzes Prometheus metrics against [instrumentatio
 
 ## 🎬 Demo
 
-[![Demo](./docs/preview.png)](./docs/demo.mp4)
+[![Demo](./docs/preview.png)](https://github.com/user-attachments/assets/f584d2d3-91eb-4a3e-84d3-f2aadfa93bb7)
 
 *Demo showing metrics analysis, scoring, and HTML report generation*
 
