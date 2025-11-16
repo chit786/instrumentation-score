@@ -262,7 +262,6 @@ func TestCopyFile_NonExistentSource(t *testing.T) {
 		t.Errorf("expected error for non-existent source file")
 	}
 }
-
 func TestS3ClientIntegration(t *testing.T) {
 	// This would require actual AWS credentials or localstack
 	// Skip for unit tests

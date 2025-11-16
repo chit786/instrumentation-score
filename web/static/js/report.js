@@ -56,7 +56,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // Metric detail modal
-function showMetricDetail(metricName, labels, cardinality, status, failedRulesStr) {
+function showMetricDetail(metricName, labels, cardinality, status, failedRulesStr, labelCardinalityJSON) {
     const panel = document.getElementById('metricDetailPanel');
     const overlay = document.getElementById('modalOverlay');
     const failedRules = failedRulesStr ? failedRulesStr.split('|').filter(r => r) : [];
@@ -74,13 +74,30 @@ function showMetricDetail(metricName, labels, cardinality, status, failedRulesSt
     const labelsArray = labels ? labels.split(',').map(l => l.trim()).filter(l => l) : [];
     document.getElementById('metricDetailLabelCount').textContent = labelsArray.length;
     
+    // Parse label cardinality JSON if available
+    let labelCardinality = null;
+    if (labelCardinalityJSON && labelCardinalityJSON !== '') {
+        try {
+            labelCardinality = JSON.parse(labelCardinalityJSON);
+        } catch (e) {
+            console.warn('Failed to parse label cardinality JSON:', e);
+        }
+    }
+    
     const labelsContainer = document.getElementById('metricDetailLabels');
     if (labelsArray.length > 0) {
         let html = '';
         labelsArray.forEach((label) => {
             html += '<div class="metric-detail-info-row">';
             html += '<span class="metric-detail-info-label"><span class="metric-label-tag">' + label + '</span></span>';
-            html += '<span class="metric-detail-info-value" style="color: #888; font-size: 11px;">~' + Math.ceil(cardNum / labelsArray.length).toLocaleString() + ' est.</span>';
+            
+            // Use actual cardinality if available, otherwise show estimate
+            if (labelCardinality && labelCardinality[label] !== undefined) {
+                html += '<span class="metric-detail-info-value" style="color: #4caf50; font-size: 11px;">' + labelCardinality[label].toLocaleString() + '</span>';
+            } else {
+                html += '<span class="metric-detail-info-value" style="color: #888; font-size: 11px;">~' + Math.ceil(cardNum / labelsArray.length).toLocaleString() + ' est.</span>';
+            }
+            
             html += '</div>';
         });
         labelsContainer.innerHTML = html;

@@ -16,7 +16,7 @@ Implements the Instrumentation Score specification (https://github.com/instrumen
 adapted for Prometheus metrics.
 
 Commands:
-  analyze     - Collect metrics from Prometheus where grouped by job
+  analyze     - Collect metrics from Prometheus grouped by job
   evaluate    - Evaluate job metrics with scoring and cost analysis
   completion  - Generate shell completion scripts
 

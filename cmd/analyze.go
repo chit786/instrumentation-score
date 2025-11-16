@@ -13,13 +13,17 @@ import (
 )
 
 var (
-	analyzeOutputDir    string
-	analyzeQueryFilters string
-	analyzeRetryCount   int
-	analyzeS3Upload     bool
-	analyzeS3Bucket     string
-	analyzeS3Prefix     string
-	analyzeS3Region     string
+	analyzeOutputDir                   string
+	analyzeQueryFilters                string
+	analyzeRetryCount                  int
+	analyzeS3Upload                    bool
+	analyzeS3Bucket                    string
+	analyzeS3Prefix                    string
+	analyzeS3Region                    string
+	analyzeCollectLabelCardinality     bool
+	analyzeLabelCardinalityConcurrency int
+	analyzeMetricsConcurrency          int
+	analyzeJobsConcurrency             int
 )
 
 var analyzeCmd = &cobra.Command{
@@ -34,15 +38,15 @@ This command fetches metrics from Prometheus, analyzes them by job, and generate
 The reports are written to a timestamped directory in the output folder.
 
 Examples:
-  # For local/unauthenticated Prometheus
-  export url="http://localhost:9090"
+  # For authenticated Prometheus (e.g., Grafana Cloud)
+  export login="user:password"
+  export url="https://your-prometheus-instance.com/api/prom"
   
   instrumentation-score analyze \
     --output-dir ./reports
 
-  # For authenticated Prometheus
-  export login="user:api_key"
-  export url="https://your-prometheus-instance.com/api/prom"
+  # For local/unauthenticated Prometheus
+  export url="http://localhost:9090"
   
   instrumentation-score analyze \
     --output-dir ./reports
@@ -69,6 +73,10 @@ func init() {
 	analyzeCmd.Flags().StringVar(&analyzeS3Bucket, "s3-bucket", "", "S3 bucket name (or use S3_BUCKET env var)")
 	analyzeCmd.Flags().StringVar(&analyzeS3Prefix, "s3-prefix", "", "S3 key prefix (or use S3_PREFIX env var)")
 	analyzeCmd.Flags().StringVar(&analyzeS3Region, "s3-region", "eu-west-1", "AWS region (or use AWS_REGION env var)")
+	analyzeCmd.Flags().BoolVar(&analyzeCollectLabelCardinality, "collect-label-cardinality", false, "Collect per-label cardinality data using Mimir cardinality API (more accurate but slower)")
+	analyzeCmd.Flags().IntVar(&analyzeLabelCardinalityConcurrency, "label-cardinality-concurrency", 0, "Number of concurrent label cardinality API requests (default: 50, or CONCURRENT_LABEL_CARDINALITY env var)")
+	analyzeCmd.Flags().IntVar(&analyzeMetricsConcurrency, "metrics-concurrency", 0, "Number of concurrent metrics to process (default: 5, or CONCURRENT_METRICS env var)")
+	analyzeCmd.Flags().IntVar(&analyzeJobsConcurrency, "jobs-concurrency", 0, "Number of concurrent job queries per metric (default: 3, or CONCURRENT_JOBS env var)")
 }
 
 func runAnalyze() {
@@ -98,11 +106,24 @@ func runAnalyze() {
 		fmt.Printf("Query filters: %s\n", analyzeQueryFilters)
 	}
 	fmt.Printf("Retry count: %d\n", analyzeRetryCount)
+	fmt.Printf("Collect label cardinality: %v\n", analyzeCollectLabelCardinality)
 	fmt.Printf("Output directory: %s\n", jobMetricsDir)
 	fmt.Println()
 
 	collector := collectors.NewCollectorWithClient(client, analyzeQueryFilters)
 	collector.SetRetryCount(analyzeRetryCount)
+	collector.SetCollectLabelCardinality(analyzeCollectLabelCardinality)
+
+	// Override concurrency settings if flags are provided (flags take precedence over env vars)
+	if analyzeLabelCardinalityConcurrency > 0 {
+		collector.SetLabelCardinalityConcurrency(analyzeLabelCardinalityConcurrency)
+	}
+	if analyzeMetricsConcurrency > 0 {
+		collector.SetMetricsConcurrency(analyzeMetricsConcurrency)
+	}
+	if analyzeJobsConcurrency > 0 {
+		collector.SetJobsConcurrency(analyzeJobsConcurrency)
+	}
 	allData, errors, err := collector.CollectMetrics()
 	if err != nil {
 		fmt.Printf("ERROR: %v\n", err)

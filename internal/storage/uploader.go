@@ -10,12 +10,12 @@ import (
 
 // AnalysisUploadConfig contains configuration for uploading analysis results
 type AnalysisUploadConfig struct {
-	Bucket        string
-	Prefix        string
-	Region        string
+	Bucket       string
+	Prefix       string
+	Region       string
 	JobMetricsDir string
-	ErrorFile     string
-	Timestamp     string
+	ErrorFile    string
+	Timestamp    string
 }
 
 // EvaluationUploadConfig contains configuration for uploading evaluation results
@@ -199,3 +199,4 @@ func contains(slice []string, item string) bool {
 	}
 	return false
 }
+

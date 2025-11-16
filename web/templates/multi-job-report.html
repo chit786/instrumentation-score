@@ -101,7 +101,7 @@
                     <tbody>
                         {{range $job.Metrics}}
                         <tr style="cursor: pointer;" 
-                            onclick="showMetricDetail('{{.MetricName}}', '{{.Labels}}', '{{.Cardinality}}', '{{.Status}}', '{{range .FailedRules}}{{.}}|{{end}}')"
+                            onclick="showMetricDetail('{{.MetricName}}', '{{.Labels}}', '{{.Cardinality}}', '{{.Status}}', '{{range .FailedRules}}{{.}}|{{end}}', '{{.LabelCardinality}}')"
                             onmouseover="this.style.background='rgba(255,255,255,0.05)'" 
                             onmouseout="this.style.background=''">
                             <td style="font-family: monospace; color: #4a9eff;">{{.MetricName}}</td>
@@ -168,7 +168,7 @@
                     </div>
                     <div class="metric-detail-info" id="metricDetailLabels" style="display: none;"></div>
                     <div style="font-size: 11px; color: #888; margin-top: 12px; padding: 8px; background: rgba(255,255,255,0.03); border-radius: 6px;">
-                        💡 <strong>Tip:</strong> Per-label cardinality analysis available with <code style="color: #4a9eff;">--collect-label-cardinality</code> flag during analysis
+                        💡 <strong>Tip:</strong> Actual values shown in <span style="color: #4caf50;">green</span>. Use <code style="color: #4a9eff;">--collect-label-cardinality</code> flag during analysis for accurate per-label cardinality data.
                     </div>
                 </div>
 

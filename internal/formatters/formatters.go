@@ -54,16 +54,18 @@ type JobScoreData struct {
 	RuleResults      []engine.RuleResult
 }
 
-// PrometheusMetricsWithSLO outputs per-job instrumentation score metrics for SLO tracking
-// These metrics can be used in Prometheus alerting or with monitoring platforms
-// Example usage:
+// PrometheusMetricsWithSLO outputs per-job instrumentation score metrics for Cortex.io SLO tracking
+// These metrics can be used in Cortex.io Scorecards with PromQL queries to define SLOs
+// Example Cortex.io SLO configuration:
 //
-//	instrumentation_quality_score{job="api-service"} < 75
+//	errorQuery: 100 - instrumentation_quality_score{job="api-service"}
+//	totalQuery: 100
+//	slo: 75.0  # Target: Score should be >= 75%
 func PrometheusMetricsWithSLO(jobs []JobScoreData) string {
 	var output strings.Builder
 
 	// Instrumentation Quality Score (0-100 scale)
-	// Primary metric for SLO tracking
+	// Primary metric for SLO tracking in Cortex.io
 	output.WriteString("# HELP instrumentation_quality_score Instrumentation quality score per job (0-100)\n")
 	output.WriteString("# TYPE instrumentation_quality_score gauge\n")
 	for _, job := range jobs {
@@ -132,11 +134,12 @@ func getScoreCategory(score float64) string {
 
 // JobMetricDetail represents detailed metric information for HTML output
 type JobMetricDetail struct {
-	MetricName  string
-	Labels      string
-	Cardinality string
-	Status      string
-	FailedRules []string
+	MetricName       string
+	Labels           string
+	Cardinality      string
+	Status           string
+	FailedRules      []string
+	LabelCardinality string // JSON string of label->cardinality map
 }
 
 // MultiJobHTMLData represents data for multi-job HTML reports

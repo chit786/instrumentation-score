@@ -119,11 +119,11 @@ rules:
 	}
 	tmpRulesFile.Close()
 
-	// Create test data file (labels format: metric_name|labels)
-	dataContent := `"http_requests_total"|"method,status,endpoint"
-"http_request_duration_seconds"|"method,endpoint"
-"memory_usage_bytes"|"instance"
-"InvalidMetricName"|"status"
+	// Create test data file (labels format: METRIC_NAME|LABELS)
+	dataContent := `http_requests_total|method,status,path
+http_request_duration_seconds|method,status
+memory_usage_bytes|instance,job
+InvalidMetricName|label1,label2
 `
 	tmpDataFile, err := os.CreateTemp("", "test_data_*.txt")
 	if err != nil {
