@@ -1,6 +1,9 @@
 package storage
 
 import (
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -261,6 +264,32 @@ func TestCopyFile_NonExistentSource(t *testing.T) {
 	if err == nil {
 		t.Errorf("expected error for non-existent source file")
 	}
+}
+
+// Mock S3 server for integration-style tests
+func setupMockS3Server(t *testing.T) *httptest.Server {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == "PUT":
+			// Upload
+			body, _ := io.ReadAll(r.Body)
+			t.Logf("Mock S3: PUT %s (%d bytes)", r.URL.Path, len(body))
+			w.WriteHeader(http.StatusOK)
+		case r.Method == "GET":
+			// Download
+			t.Logf("Mock S3: GET %s", r.URL.Path)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("mock file content"))
+		case r.Method == "HEAD":
+			// Check existence
+			t.Logf("Mock S3: HEAD %s", r.URL.Path)
+			w.WriteHeader(http.StatusOK)
+		default:
+			t.Logf("Mock S3: %s %s (not implemented)", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotImplemented)
+		}
+	})
+	return httptest.NewServer(handler)
 }
 
 func TestS3ClientIntegration(t *testing.T) {

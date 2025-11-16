@@ -21,10 +21,11 @@ type LabelsData struct {
 
 // JobMetricData represents complete metric data per job
 type JobMetricData struct {
-	Job         string
-	MetricName  string
-	Labels      []string
-	Cardinality int64
+	Job              string
+	MetricName       string
+	Labels           []string
+	Cardinality      int64
+	LabelCardinality map[string]int64 // Per-label cardinality (label_name -> cardinality)
 }
 
 // LoadCardinalityReport loads metrics cardinality data from file
@@ -119,8 +120,10 @@ func LoadJobMetricReport(filename string) ([]JobMetricData, error) {
 	var data []JobMetricData
 	scanner := bufio.NewScanner(file)
 
-	// Skip header line (format: JOB|METRIC_NAME|LABELS|CARDINALITY)
-	scanner.Scan()
+	// Skip header line
+	if scanner.Scan() {
+		// JOB|METRIC_NAME|LABELS|CARDINALITY
+	}
 
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -129,7 +132,7 @@ func LoadJobMetricReport(filename string) ([]JobMetricData, error) {
 		}
 
 		parts := strings.Split(line, "|")
-		if len(parts) != 4 {
+		if len(parts) < 4 {
 			continue
 		}
 
@@ -150,11 +153,31 @@ func LoadJobMetricReport(filename string) ([]JobMetricData, error) {
 			}
 		}
 
+		// Parse per-label cardinality if present (5th column)
+		var labelCardinality map[string]int64
+		if len(parts) >= 5 && strings.TrimSpace(parts[4]) != "" {
+			labelCardinality = make(map[string]int64)
+			labelCardStr := strings.TrimSpace(parts[4])
+			// Format: label1:count1,label2:count2,...
+			labelCardParts := strings.Split(labelCardStr, ",")
+			for _, part := range labelCardParts {
+				kv := strings.Split(part, ":")
+				if len(kv) == 2 {
+					labelName := strings.TrimSpace(kv[0])
+					count, err := strconv.ParseInt(strings.TrimSpace(kv[1]), 10, 64)
+					if err == nil {
+						labelCardinality[labelName] = count
+					}
+				}
+			}
+		}
+
 		data = append(data, JobMetricData{
-			Job:         strings.TrimSpace(parts[0]),
-			MetricName:  strings.TrimSpace(parts[1]),
-			Labels:      cleanLabels,
-			Cardinality: cardinality,
+			Job:              strings.TrimSpace(parts[0]),
+			MetricName:       strings.TrimSpace(parts[1]),
+			Labels:           cleanLabels,
+			Cardinality:      cardinality,
+			LabelCardinality: labelCardinality,
 		})
 	}
 

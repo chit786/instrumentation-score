@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -16,7 +15,7 @@ Implements the Instrumentation Score specification (https://github.com/instrumen
 adapted for Prometheus metrics.
 
 Commands:
-  analyze     - Collect metrics from Prometheus where grouped by job
+  analyze     - Collect metrics from Grafana Cloud Prometheus grouped by job
   evaluate    - Evaluate job metrics with scoring and cost analysis
   completion  - Generate shell completion scripts
 
@@ -68,20 +67,15 @@ PowerShell:
 	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
 	Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
 	Run: func(cmd *cobra.Command, args []string) {
-		var err error
 		switch args[0] {
 		case "bash":
-			err = cmd.Root().GenBashCompletion(os.Stdout)
+			cmd.Root().GenBashCompletion(os.Stdout)
 		case "zsh":
-			err = cmd.Root().GenZshCompletion(os.Stdout)
+			cmd.Root().GenZshCompletion(os.Stdout)
 		case "fish":
-			err = cmd.Root().GenFishCompletion(os.Stdout, true)
+			cmd.Root().GenFishCompletion(os.Stdout, true)
 		case "powershell":
-			err = cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
-		}
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error generating completion: %v\n", err)
-			os.Exit(1)
+			cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
 		}
 	},
 }

@@ -403,3 +403,80 @@ func (c *PrometheusClient) getLabelsViaAPI(metricName, job, queryFilters string)
 	}
 	return labels, nil
 }
+
+// GetLabelCardinality fetches per-label cardinality using Mimir's cardinality API
+// This uses the /api/v1/cardinality/label_values endpoint which is more accurate than estimates
+// Reference: https://grafana.com/docs/mimir/latest/query/query-metric-labels/
+func (c *PrometheusClient) GetLabelCardinality(metricName, job string, labels []string, queryFilters string) (map[string]int64, error) {
+	// Build the selector for this metric and job
+	var selector string
+	if queryFilters != "" {
+		selector = fmt.Sprintf(`{__name__="%s",%s,job="%s"}`, metricName, queryFilters, job)
+	} else {
+		selector = fmt.Sprintf(`{__name__="%s",job="%s"}`, metricName, job)
+	}
+
+	// Build URL with query parameters (Grafana Cloud expects form-encoded params, not JSON body)
+	endpoint := fmt.Sprintf("%s/api/v1/cardinality/label_values", c.BaseURL)
+	
+	// Build form data with label_names[] array parameter
+	params := url.Values{}
+	for _, label := range labels {
+		params.Add("label_names[]", label)
+	}
+	params.Set("selector", selector)
+	
+	req, err := http.NewRequest("POST", endpoint, strings.NewReader(params.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	c.addAuthIfNeeded(req)
+
+	resp, err := c.doRequestWithRetry(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response: %w", err)
+	}
+
+	if resp.StatusCode != 200 {
+		var errorResp struct {
+			Error string `json:"error"`
+		}
+		errorMsg := string(body)
+		if json.Unmarshal(body, &errorResp) == nil && errorResp.Error != "" {
+			errorMsg = errorResp.Error
+		}
+		if resp.StatusCode == 429 {
+			time.Sleep(2 * time.Second)
+		}
+		return nil, fmt.Errorf("HTTP %d - label cardinality API - job: %s - error: %s",
+			resp.StatusCode, job, errorMsg)
+	}
+
+	// Parse the response (Grafana Cloud format)
+	var result struct {
+		Labels []struct {
+			LabelName        string `json:"label_name"`
+			SeriesCount      int64  `json:"series_count"`
+			LabelValuesCount int64  `json:"label_values_count"`
+		} `json:"labels"`
+	}
+
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %w", err)
+	}
+
+	// Build the cardinality map using label_values_count (unique values per label)
+	cardinalityMap := make(map[string]int64)
+	for _, item := range result.Labels {
+		cardinalityMap[item.LabelName] = item.LabelValuesCount
+	}
+
+	return cardinalityMap, nil
+}

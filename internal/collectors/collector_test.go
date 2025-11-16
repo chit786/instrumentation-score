@@ -220,7 +220,7 @@ func TestNewCollector(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			collector := NewCollector(tt.baseURL, tt.login, tt.queryFilters)
 			if collector == nil {
-				t.Fatal("NewCollector() returned nil")
+				t.Error("NewCollector() returned nil")
 			}
 			if collector.client == nil {
 				t.Error("collector.client is nil")
@@ -228,8 +228,14 @@ func TestNewCollector(t *testing.T) {
 			if collector.queryFilters != tt.queryFilters {
 				t.Errorf("collector.queryFilters = %v, want %v", collector.queryFilters, tt.queryFilters)
 			}
-			if collector.maxConcurrent != 5 {
-				t.Errorf("collector.maxConcurrent = %v, want 5", collector.maxConcurrent)
+			if collector.maxConcurrentMetrics != 5 {
+				t.Errorf("collector.maxConcurrentMetrics = %v, want 5", collector.maxConcurrentMetrics)
+			}
+			if collector.maxConcurrentJobs != 3 {
+				t.Errorf("collector.maxConcurrentJobs = %v, want 3", collector.maxConcurrentJobs)
+			}
+			if collector.maxConcurrentLabelCardinality != 50 {
+				t.Errorf("collector.maxConcurrentLabelCardinality = %v, want 50", collector.maxConcurrentLabelCardinality)
 			}
 		})
 	}

@@ -662,6 +662,14 @@ func generateHTMLReport(report AllJobsReport, files []string) {
 				}
 			}
 
+			// Serialize label cardinality to JSON
+			var labelCardinalityJSON string
+			if metric.LabelCardinality != nil && len(metric.LabelCardinality) > 0 {
+				if jsonBytes, err := json.Marshal(metric.LabelCardinality); err == nil {
+					labelCardinalityJSON = string(jsonBytes)
+				}
+			}
+
 			// Check if metric failed
 			failedValidators := jobResult.RuleResults
 			var failures []string
@@ -674,11 +682,12 @@ func generateHTMLReport(report AllJobsReport, files []string) {
 			}
 
 			metrics = append(metrics, formatters.JobMetricDetail{
-				MetricName:  metric.MetricName,
-				Cardinality: cardinality,
-				Labels:      labels,
-				Status:      status,
-				FailedRules: failures,
+				MetricName:       metric.MetricName,
+				Cardinality:      cardinality,
+				Labels:           labels,
+				Status:           status,
+				FailedRules:      failures,
+				LabelCardinality: labelCardinalityJSON,
 			})
 		}
 
