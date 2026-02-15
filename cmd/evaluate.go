@@ -39,12 +39,13 @@ var (
 	costPrice    float64
 
 	// S3 flags
-	evaluateS3Source bool
-	evaluateS3Upload bool
-	evaluateS3Bucket string
-	evaluateS3Prefix string
-	evaluateS3Region string
-	evaluateS3RunID  string
+	evaluateS3Source    bool
+	evaluateS3Upload    bool
+	evaluateS3Bucket    string
+	evaluateS3Prefix    string
+	evaluateS3Region    string
+	evaluateS3RunID     string
+	evaluateS3OutputDir string
 )
 
 // JobScoreResult represents the score result for a single job
@@ -125,6 +126,7 @@ func init() {
 	evaluateCmd.Flags().StringVar(&evaluateS3Prefix, "s3-prefix", "", "S3 key prefix/path (or use S3_PREFIX env var)")
 	evaluateCmd.Flags().StringVar(&evaluateS3Region, "s3-region", "eu-west-1", "AWS region (or use AWS_REGION env var)")
 	evaluateCmd.Flags().StringVar(&evaluateS3RunID, "s3-run-id", "", "Run ID for S3 organization (default: auto-generated timestamp)")
+	evaluateCmd.Flags().StringVar(&evaluateS3OutputDir, "s3-output-dir", "", "Upload to fixed directory (e.g., 'outputs') instead of timestamped evaluations/")
 }
 
 func runEvaluate() {
@@ -510,14 +512,33 @@ func runAllJobsEvaluation(formats []string) {
 			manifest.SourcePath = jobFile
 		}
 
+		// Check for error files in the job directory
+		var errorFile, errorDir string
+		if jobDir != "" {
+			// Check for errors subdirectory
+			errorsSubDir := filepath.Join(jobDir, "errors")
+			if stat, err := os.Stat(errorsSubDir); err == nil && stat.IsDir() {
+				errorDir = errorsSubDir
+			}
+
+			// Also check for errors.txt in the main directory
+			errorFilePath := filepath.Join(jobDir, "errors", "errors.txt")
+			if _, err := os.Stat(errorFilePath); err == nil {
+				errorFile = errorFilePath
+			}
+		}
+
 		config := storage.EvaluationUploadConfig{
 			Bucket:         bucket,
 			Prefix:         prefix,
 			Region:         region,
 			RunID:          evaluateS3RunID,
+			OutputDir:      evaluateS3OutputDir,
 			JSONFile:       jsonFile,
 			HTMLFile:       htmlFile,
 			PrometheusFile: prometheusFile,
+			ErrorFile:      errorFile,
+			ErrorDir:       errorDir,
 			OutputFormats:  formats,
 			Manifest:       manifest,
 		}
@@ -662,11 +683,11 @@ func generateHTMLReport(report AllJobsReport, files []string) {
 				}
 			}
 
-		// Serialize label cardinality to JSON
-		var labelCardinalityJSON string
-		if len(metric.LabelCardinality) > 0 {
-			if jsonBytes, err := json.Marshal(metric.LabelCardinality); err == nil {
-				labelCardinalityJSON = string(jsonBytes)
+			// Serialize label cardinality to JSON
+			var labelCardinalityJSON string
+			if len(metric.LabelCardinality) > 0 {
+				if jsonBytes, err := json.Marshal(metric.LabelCardinality); err == nil {
+					labelCardinalityJSON = string(jsonBytes)
 				}
 			}
 

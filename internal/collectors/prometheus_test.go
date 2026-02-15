@@ -20,7 +20,8 @@ func TestPrometheusClient_GetAllMetricNames(t *testing.T) {
 			name:         "successful fetch without filters",
 			queryFilters: "",
 			response: map[string]interface{}{
-				"data": []string{"metric1", "metric2", "metric3"},
+				"status": "success",
+				"data":   []string{"metric1", "metric2", "metric3"},
 			},
 			wantCount: 3,
 			wantErr:   false,
@@ -29,7 +30,8 @@ func TestPrometheusClient_GetAllMetricNames(t *testing.T) {
 			name:         "successful fetch with filters",
 			queryFilters: "cluster=~\"prod.*\"",
 			response: map[string]interface{}{
-				"data": []string{"metric1", "metric2"},
+				"status": "success",
+				"data":   []string{"metric1", "metric2"},
 			},
 			wantCount: 2,
 			wantErr:   false,
@@ -38,7 +40,8 @@ func TestPrometheusClient_GetAllMetricNames(t *testing.T) {
 			name:         "empty result",
 			queryFilters: "",
 			response: map[string]interface{}{
-				"data": []string{},
+				"status": "success",
+				"data":   []string{},
 			},
 			wantCount: 0,
 			wantErr:   false,
@@ -326,16 +329,17 @@ func TestPrometheusClient_RetryLogic(t *testing.T) {
 				return
 			}
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"data": []string{"metric1", "metric2"},
+				"status": "success",
+				"data":   []string{"metric1", "metric2"},
 			})
 		}))
 		defer server.Close()
 
 		client := NewPrometheusClient(server.URL, "user:pass")
 		client.SetRetryCount(2)
-		
+
 		metrics, err := client.GetAllMetricNames("")
-		
+
 		if err != nil {
 			t.Errorf("expected success after retries, got error: %v", err)
 		}
@@ -360,9 +364,9 @@ func TestPrometheusClient_RetryLogic(t *testing.T) {
 
 		client := NewPrometheusClient(server.URL, "user:pass")
 		client.SetRetryCount(2)
-		
+
 		_, err := client.GetAllMetricNames("")
-		
+
 		if err == nil {
 			t.Error("expected error after max retries")
 		}
@@ -376,16 +380,17 @@ func TestPrometheusClient_RetryLogic(t *testing.T) {
 		server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			atomic.AddInt32(&attemptCount, 1)
 			json.NewEncoder(w).Encode(map[string]interface{}{
-				"data": []string{"metric1"},
+				"status": "success",
+				"data":   []string{"metric1"},
 			})
 		}))
 		defer server.Close()
 
 		client := NewPrometheusClient(server.URL, "user:pass")
 		client.SetRetryCount(2)
-		
+
 		metrics, err := client.GetAllMetricNames("")
-		
+
 		if err != nil {
 			t.Errorf("expected success, got error: %v", err)
 		}

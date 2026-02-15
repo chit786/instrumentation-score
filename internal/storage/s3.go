@@ -2,23 +2,24 @@ package storage
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
 type S3Client struct {
 	bucket   string
 	prefix   string
-	uploader *s3manager.Uploader
-	s3Svc    *s3.S3
+	client   *s3.Client
+	uploader *manager.Uploader
 }
 
 func NewS3Client(bucket, prefix, region string) (*S3Client, error) {
@@ -26,18 +27,19 @@ func NewS3Client(bucket, prefix, region string) (*S3Client, error) {
 		return nil, fmt.Errorf("S3 bucket name is required")
 	}
 
-	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(region),
-	})
+	ctx := context.Background()
+	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create AWS session: %w", err)
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
+
+	client := s3.NewFromConfig(cfg)
 
 	return &S3Client{
 		bucket:   bucket,
 		prefix:   prefix,
-		uploader: s3manager.NewUploader(sess),
-		s3Svc:    s3.New(sess),
+		client:   client,
+		uploader: manager.NewUploader(client),
 	}, nil
 }
 
@@ -61,7 +63,7 @@ func (c *S3Client) UploadFile(localPath, s3Key string) error {
 	defer file.Close()
 
 	key := c.buildKey(s3Key)
-	_, err = c.uploader.Upload(&s3manager.UploadInput{
+	_, err = c.uploader.Upload(context.Background(), &s3.PutObjectInput{
 		Bucket: aws.String(c.bucket),
 		Key:    aws.String(key),
 		Body:   file,
@@ -121,8 +123,8 @@ func (c *S3Client) DownloadFile(s3Key, localPath string) error {
 	}
 	defer file.Close()
 
-	downloader := s3manager.NewDownloaderWithClient(c.s3Svc)
-	_, err = downloader.Download(file, &s3.GetObjectInput{
+	downloader := manager.NewDownloader(c.client)
+	_, err = downloader.Download(context.Background(), file, &s3.GetObjectInput{
 		Bucket: aws.String(c.bucket),
 		Key:    aws.String(key),
 	})
@@ -137,12 +139,19 @@ func (c *S3Client) DownloadDirectory(s3Prefix, localDir string) ([]string, error
 	var downloadedFiles []string
 
 	prefix := c.buildKey(s3Prefix)
-	err := c.s3Svc.ListObjectsV2Pages(&s3.ListObjectsV2Input{
+	paginator := s3.NewListObjectsV2Paginator(c.client, &s3.ListObjectsV2Input{
 		Bucket: aws.String(c.bucket),
 		Prefix: aws.String(prefix),
-	}, func(page *s3.ListObjectsV2Output, lastPage bool) bool {
+	})
+
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("failed to list objects in s3://%s/%s: %w", c.bucket, prefix, err)
+		}
+
 		for _, obj := range page.Contents {
-			s3Key := aws.StringValue(obj.Key)
+			s3Key := aws.ToString(obj.Key)
 
 			relPath := strings.TrimPrefix(s3Key, prefix)
 			relPath = strings.TrimPrefix(relPath, "/")
@@ -159,11 +168,6 @@ func (c *S3Client) DownloadDirectory(s3Prefix, localDir string) ([]string, error
 
 			downloadedFiles = append(downloadedFiles, localPath)
 		}
-		return true
-	})
-
-	if err != nil {
-		return nil, fmt.Errorf("failed to list objects in s3://%s/%s: %w", c.bucket, prefix, err)
 	}
 
 	if len(downloadedFiles) == 0 {
@@ -177,18 +181,20 @@ func (c *S3Client) ListFiles(s3Prefix string) ([]string, error) {
 	var files []string
 
 	prefix := c.buildKey(s3Prefix)
-	err := c.s3Svc.ListObjectsV2Pages(&s3.ListObjectsV2Input{
+	paginator := s3.NewListObjectsV2Paginator(c.client, &s3.ListObjectsV2Input{
 		Bucket: aws.String(c.bucket),
 		Prefix: aws.String(prefix),
-	}, func(page *s3.ListObjectsV2Output, lastPage bool) bool {
-		for _, obj := range page.Contents {
-			files = append(files, aws.StringValue(obj.Key))
-		}
-		return true
 	})
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to list files: %w", err)
+	for paginator.HasMorePages() {
+		page, err := paginator.NextPage(context.Background())
+		if err != nil {
+			return nil, fmt.Errorf("failed to list files: %w", err)
+		}
+
+		for _, obj := range page.Contents {
+			files = append(files, aws.ToString(obj.Key))
+		}
 	}
 
 	return files, nil
@@ -196,12 +202,12 @@ func (c *S3Client) ListFiles(s3Prefix string) ([]string, error) {
 
 func (c *S3Client) FileExists(s3Key string) (bool, error) {
 	key := c.buildKey(s3Key)
-	_, err := c.s3Svc.HeadObject(&s3.HeadObjectInput{
+	_, err := c.client.HeadObject(context.Background(), &s3.HeadObjectInput{
 		Bucket: aws.String(c.bucket),
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		if strings.Contains(err.Error(), "NotFound") {
+		if strings.Contains(err.Error(), "NotFound") || strings.Contains(err.Error(), "404") {
 			return false, nil
 		}
 		return false, err
@@ -211,7 +217,7 @@ func (c *S3Client) FileExists(s3Key string) (bool, error) {
 
 func (c *S3Client) UploadContent(content []byte, s3Key string) error {
 	key := c.buildKey(s3Key)
-	_, err := c.uploader.Upload(&s3manager.UploadInput{
+	_, err := c.uploader.Upload(context.Background(), &s3.PutObjectInput{
 		Bucket: aws.String(c.bucket),
 		Key:    aws.String(key),
 		Body:   bytes.NewReader(content),
@@ -225,17 +231,21 @@ func (c *S3Client) UploadContent(content []byte, s3Key string) error {
 func (c *S3Client) DownloadContent(s3Key string) ([]byte, error) {
 	key := c.buildKey(s3Key)
 
-	buff := &aws.WriteAtBuffer{}
-	downloader := s3manager.NewDownloaderWithClient(c.s3Svc)
-	_, err := downloader.Download(buff, &s3.GetObjectInput{
+	result, err := c.client.GetObject(context.Background(), &s3.GetObjectInput{
 		Bucket: aws.String(c.bucket),
 		Key:    aws.String(key),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to download content from s3://%s/%s: %w", c.bucket, key, err)
 	}
+	defer result.Body.Close()
 
-	return buff.Bytes(), nil
+	data, err := io.ReadAll(result.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read content from s3://%s/%s: %w", c.bucket, key, err)
+	}
+
+	return data, nil
 }
 
 func (c *S3Client) GetBucket() string {

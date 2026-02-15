@@ -10,12 +10,12 @@ import (
 
 // AnalysisUploadConfig contains configuration for uploading analysis results
 type AnalysisUploadConfig struct {
-	Bucket       string
-	Prefix       string
-	Region       string
+	Bucket        string
+	Prefix        string
+	Region        string
 	JobMetricsDir string
-	ErrorFile    string
-	Timestamp    string
+	ErrorFile     string
+	RunID         string // Identifier for this analysis run (used as S3 subdirectory name)
 }
 
 // EvaluationUploadConfig contains configuration for uploading evaluation results
@@ -24,9 +24,12 @@ type EvaluationUploadConfig struct {
 	Prefix         string
 	Region         string
 	RunID          string
+	OutputDir      string // Fixed output directory (e.g., "outputs") - if set, skips timestamped evaluations/
 	JSONFile       string
 	HTMLFile       string
 	PrometheusFile string
+	ErrorFile      string // Path to errors.txt file (optional)
+	ErrorDir       string // Path to errors directory (optional)
 	OutputFormats  []string
 	Manifest       *EvaluationManifest
 }
@@ -54,6 +57,7 @@ type EvaluationManifest struct {
 		JSON       string `json:"json,omitempty"`
 		HTML       string `json:"html,omitempty"`
 		Prometheus string `json:"prometheus,omitempty"`
+		Errors     string `json:"errors,omitempty"`
 		Manifest   string `json:"manifest"`
 	} `json:"files"`
 }
@@ -65,7 +69,8 @@ func UploadAnalysisResults(config AnalysisUploadConfig) error {
 		return fmt.Errorf("failed to create S3 client: %w", err)
 	}
 
-	s3Prefix := fmt.Sprintf("job_metrics_%s", config.Timestamp)
+	// Use RunID directly as the S3 subdirectory (e.g., "job_metrics" or "job_metrics_20251211")
+	s3Prefix := config.RunID
 	uploadedFiles, err := s3Client.UploadDirectory(config.JobMetricsDir, s3Prefix)
 	if err != nil {
 		return fmt.Errorf("failed to upload job metrics directory: %w", err)
@@ -73,8 +78,9 @@ func UploadAnalysisResults(config AnalysisUploadConfig) error {
 
 	fmt.Printf("Uploaded %d job metric files to %s\n", len(uploadedFiles), s3Client.GetS3URI(s3Prefix))
 
+	// Upload error file to errors subdirectory within the run
 	if _, err := os.Stat(config.ErrorFile); err == nil {
-		errorS3Key := fmt.Sprintf("metrics_errors_%s.txt", config.Timestamp)
+		errorS3Key := fmt.Sprintf("%s/errors/errors.txt", s3Prefix)
 		if err := s3Client.UploadFile(config.ErrorFile, errorS3Key); err != nil {
 			fmt.Printf("WARNING: Failed to upload error file: %v\n", err)
 		} else {
@@ -82,7 +88,7 @@ func UploadAnalysisResults(config AnalysisUploadConfig) error {
 		}
 	}
 
-	fmt.Printf("\nS3 Location: s3://%s/%s/job_metrics_%s/\n", config.Bucket, config.Prefix, config.Timestamp)
+	fmt.Printf("\nS3 Location: s3://%s/%s/%s/\n", config.Bucket, config.Prefix, s3Prefix)
 	return nil
 }
 
@@ -118,14 +124,22 @@ func UploadEvaluationResults(config EvaluationUploadConfig) error {
 		return fmt.Errorf("failed to create S3 client: %w", err)
 	}
 
-	// Generate run ID if not provided
-	runID := config.RunID
-	if runID == "" {
-		timestamp := time.Now().Format("20060102_150405")
-		runID = fmt.Sprintf("evaluation_%s", timestamp)
-	}
+	var s3Prefix string
+	var runID string
 
-	s3Prefix := fmt.Sprintf("evaluations/%s", runID)
+	if config.OutputDir != "" {
+		// Upload to fixed directory for consistent exporter consumption
+		s3Prefix = config.OutputDir
+		runID = config.OutputDir
+	} else {
+		// Generate timestamped run ID if not provided
+		runID = config.RunID
+		if runID == "" {
+			timestamp := time.Now().Format("20060102_150405")
+			runID = fmt.Sprintf("evaluation_%s", timestamp)
+		}
+		s3Prefix = fmt.Sprintf("evaluations/%s", runID)
+	}
 
 	// Update manifest
 	if config.Manifest == nil {
@@ -166,6 +180,44 @@ func UploadEvaluationResults(config EvaluationUploadConfig) error {
 		fmt.Printf("✅ Uploaded Prometheus metrics to %s\n", s3Client.GetS3URI(s3Key))
 	}
 
+	// Upload error file if provided
+	if config.ErrorFile != "" {
+		if _, err := os.Stat(config.ErrorFile); err == nil {
+			s3Key := fmt.Sprintf("%s/errors.txt", s3Prefix)
+			if err := s3Client.UploadFile(config.ErrorFile, s3Key); err != nil {
+				fmt.Printf("⚠️  Warning: Failed to upload error file: %v\n", err)
+			} else {
+				config.Manifest.Files.Errors = s3Key
+				fmt.Printf("✅ Uploaded error file to %s\n", s3Client.GetS3URI(s3Key))
+			}
+		}
+	}
+
+	// Upload error directory if provided (for analyze command compatibility)
+	if config.ErrorDir != "" {
+		if stat, err := os.Stat(config.ErrorDir); err == nil && stat.IsDir() {
+			// Upload all files in the errors directory
+			errorFiles, err := os.ReadDir(config.ErrorDir)
+			if err == nil && len(errorFiles) > 0 {
+				for _, file := range errorFiles {
+					if file.IsDir() {
+						continue
+					}
+					localPath := fmt.Sprintf("%s/%s", config.ErrorDir, file.Name())
+					s3Key := fmt.Sprintf("%s/errors/%s", s3Prefix, file.Name())
+					if err := s3Client.UploadFile(localPath, s3Key); err != nil {
+						fmt.Printf("⚠️  Warning: Failed to upload %s: %v\n", file.Name(), err)
+					} else {
+						if file.Name() == "errors.txt" {
+							config.Manifest.Files.Errors = s3Key
+						}
+						fmt.Printf("✅ Uploaded %s to %s\n", file.Name(), s3Client.GetS3URI(s3Key))
+					}
+				}
+			}
+		}
+	}
+
 	// Upload manifest
 	manifestS3Key := fmt.Sprintf("%s/manifest.json", s3Prefix)
 	config.Manifest.Files.Manifest = manifestS3Key
@@ -199,4 +251,3 @@ func contains(slice []string, item string) bool {
 	}
 	return false
 }
-

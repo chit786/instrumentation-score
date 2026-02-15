@@ -14,6 +14,7 @@ import (
 // RuleResult represents the result of evaluating a rule
 type RuleResult struct {
 	RuleID            string
+	Description       string // Rule description for UI display
 	Impact            string
 	PassedChecks      int                 // Number of validators that contributed to the score
 	TotalChecks       int                 // Total number of validators
@@ -198,6 +199,7 @@ func (e *RuleEngine) evaluateWithDataSources(dataSources map[string]interface{})
 func (e *RuleEngine) evaluateRule(rule RuleDefinition, dataSources map[string]interface{}) (RuleResult, error) {
 	result := RuleResult{
 		RuleID:            rule.RuleID,
+		Description:       rule.Description,
 		Impact:            rule.Impact,
 		PassedChecks:      0,
 		TotalChecks:       len(rule.Validators),

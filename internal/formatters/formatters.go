@@ -297,6 +297,13 @@ func getTemplateFuncs() template.FuncMap {
 		"lower": func(s string) string {
 			return strings.ToLower(s)
 		},
+		"toJSON": func(v interface{}) string {
+			jsonBytes, err := json.Marshal(v)
+			if err != nil {
+				return "[]"
+			}
+			return string(jsonBytes)
+		},
 		"getImpactClass": func(impact string) string {
 			switch impact {
 			case "Critical":

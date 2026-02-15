@@ -7,6 +7,19 @@ import (
 )
 
 func TestNewS3Client(t *testing.T) {
+	// Test empty bucket validation (doesn't need AWS session)
+	t.Run("empty bucket", func(t *testing.T) {
+		_, err := NewS3Client("", "test-prefix", "eu-west-1")
+		if err == nil {
+			t.Errorf("expected error for empty bucket but got none")
+		}
+	})
+
+	// Skip tests that require AWS session creation (causes timeout without credentials)
+	if os.Getenv("AWS_ACCESS_KEY_ID") == "" && os.Getenv("AWS_PROFILE") == "" {
+		t.Skip("Skipping AWS session tests - no credentials available")
+	}
+
 	tests := []struct {
 		name        string
 		bucket      string
@@ -20,13 +33,6 @@ func TestNewS3Client(t *testing.T) {
 			prefix:      "test-prefix",
 			region:      "eu-west-1",
 			expectError: false,
-		},
-		{
-			name:        "empty bucket",
-			bucket:      "",
-			prefix:      "test-prefix",
-			region:      "eu-west-1",
-			expectError: true,
 		},
 		{
 			name:        "empty prefix is valid",
@@ -75,6 +81,23 @@ func TestNewS3ClientFromEnv(t *testing.T) {
 		os.Setenv("AWS_REGION", origRegion)
 	}()
 
+	// Test missing bucket (doesn't need AWS session)
+	t.Run("missing bucket", func(t *testing.T) {
+		os.Setenv("S3_BUCKET", "")
+		os.Setenv("S3_PREFIX", "env-prefix")
+		os.Setenv("AWS_REGION", "us-west-2")
+
+		_, err := NewS3ClientFromEnv()
+		if err == nil {
+			t.Errorf("expected error for missing bucket but got none")
+		}
+	})
+
+	// Skip tests that require AWS session creation
+	if os.Getenv("AWS_ACCESS_KEY_ID") == "" && os.Getenv("AWS_PROFILE") == "" {
+		t.Skip("Skipping AWS session tests - no credentials available")
+	}
+
 	tests := []struct {
 		name        string
 		bucket      string
@@ -88,13 +111,6 @@ func TestNewS3ClientFromEnv(t *testing.T) {
 			prefix:      "env-prefix",
 			region:      "us-west-2",
 			expectError: false,
-		},
-		{
-			name:        "missing bucket",
-			bucket:      "",
-			prefix:      "env-prefix",
-			region:      "us-west-2",
-			expectError: true,
 		},
 		{
 			name:        "default region",

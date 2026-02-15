@@ -67,11 +67,13 @@
                 {{range $job.Results}}
                 <div class="rule-card" 
                      data-rule-id="{{.RuleID}}"
+                     data-description="{{.Description}}"
                      data-passed-metrics="{{.PassedMetrics}}"
                      data-total-metrics="{{.TotalMetrics}}"
                      data-passed-cardinality="{{.PassedCardinality}}"
                      data-total-cardinality="{{.TotalCardinality}}"
                      data-impact="{{.Impact}}"
+                     data-validator-stats="{{toJSON .ValidatorStats}}"
                      onclick="showRuleDetailFromCard(this, '{{$job.JobName}}')">
                     <div class="rule-card-header">
                         <div class="rule-card-title">{{.RuleID}}</div>
@@ -252,6 +254,9 @@
                         ⚡ This rule uses cardinality-weighted scoring
                     </div>
                 </div>
+                
+                <!-- Validator Stats -->
+                <div id="ruleValidatorStats" style="margin-bottom: 25px;"></div>
                 
                 <!-- Explanation -->
                 <div style="margin-top: 20px;">
