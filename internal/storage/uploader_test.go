@@ -14,14 +14,14 @@ func TestAnalysisUploadConfig(t *testing.T) {
 		Region:        "eu-west-1",
 		JobMetricsDir: "/tmp/metrics",
 		ErrorFile:     "/tmp/errors.txt",
-		Timestamp:     "20251102_160000",
+		RunID:         "job_metrics",
 	}
 
 	if config.Bucket != "test-bucket" {
 		t.Errorf("Bucket = %v, want test-bucket", config.Bucket)
 	}
-	if config.Timestamp != "20251102_160000" {
-		t.Errorf("Timestamp = %v, want 20251102_160000", config.Timestamp)
+	if config.RunID != "job_metrics" {
+		t.Errorf("RunID = %v, want job_metrics", config.RunID)
 	}
 }
 
@@ -39,6 +39,8 @@ func TestEvaluationUploadConfig(t *testing.T) {
 		RunID:         "test-run",
 		JSONFile:      "report.json",
 		HTMLFile:      "dashboard.html",
+		ErrorFile:     "errors.txt",
+		ErrorDir:      "errors/",
 		OutputFormats: []string{"html", "json"},
 		Manifest:      manifest,
 	}
@@ -48,6 +50,12 @@ func TestEvaluationUploadConfig(t *testing.T) {
 	}
 	if config.Manifest.TotalJobs != 10 {
 		t.Errorf("Manifest.TotalJobs = %v, want 10", config.Manifest.TotalJobs)
+	}
+	if config.ErrorFile != "errors.txt" {
+		t.Errorf("ErrorFile = %v, want errors.txt", config.ErrorFile)
+	}
+	if config.ErrorDir != "errors/" {
+		t.Errorf("ErrorDir = %v, want errors/", config.ErrorDir)
 	}
 }
 
@@ -156,7 +164,7 @@ func TestUploadAnalysisResults_InvalidConfig(t *testing.T) {
 		Region:        "eu-west-1",
 		JobMetricsDir: "/tmp/metrics",
 		ErrorFile:     "/tmp/errors.txt",
-		Timestamp:     "20251102_160000",
+		RunID:         "job_metrics",
 	}
 
 	err := UploadAnalysisResults(config)
@@ -166,13 +174,18 @@ func TestUploadAnalysisResults_InvalidConfig(t *testing.T) {
 }
 
 func TestUploadAnalysisResults_NonExistentDirectory(t *testing.T) {
+	// Skip if no AWS credentials - this test tries to create AWS session
+	if os.Getenv("AWS_ACCESS_KEY_ID") == "" && os.Getenv("AWS_PROFILE") == "" {
+		t.Skip("Skipping - requires AWS credentials")
+	}
+
 	config := AnalysisUploadConfig{
 		Bucket:        "test-bucket",
 		Prefix:        "test-prefix",
 		Region:        "eu-west-1",
 		JobMetricsDir: "/nonexistent/directory",
 		ErrorFile:     "/tmp/errors.txt",
-		Timestamp:     "20251102_160000",
+		RunID:         "job_metrics",
 	}
 
 	// This will fail when trying to upload non-existent directory
@@ -212,6 +225,11 @@ func TestUploadEvaluationResults_InvalidConfig(t *testing.T) {
 }
 
 func TestUploadEvaluationResults_AutoGenerateRunID(t *testing.T) {
+	// Skip if no AWS credentials - this test tries to create AWS session
+	if os.Getenv("AWS_ACCESS_KEY_ID") == "" && os.Getenv("AWS_PROFILE") == "" {
+		t.Skip("Skipping - requires AWS credentials")
+	}
+
 	// Create temp files for testing
 	tmpDir, err := os.MkdirTemp("", "uploader-test-*")
 	if err != nil {
@@ -415,6 +433,11 @@ func TestManifestFiles(t *testing.T) {
 }
 
 func TestUploadEvaluationResults_MultipleFormats(t *testing.T) {
+	// Skip if no AWS credentials - this test tries to create AWS session
+	if os.Getenv("AWS_ACCESS_KEY_ID") == "" && os.Getenv("AWS_PROFILE") == "" {
+		t.Skip("Skipping - requires AWS credentials")
+	}
+
 	tmpDir, err := os.MkdirTemp("", "uploader-test-*")
 	if err != nil {
 		t.Fatalf("failed to create temp dir: %v", err)
@@ -470,4 +493,3 @@ func TestUploadEvaluationResults_MultipleFormats(t *testing.T) {
 		t.Error("PrometheusFile should be set")
 	}
 }
-

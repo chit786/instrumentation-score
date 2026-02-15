@@ -279,11 +279,20 @@ function getRuleDescription(ruleID) {
 function showRuleDetailFromCard(cardElement, jobName) {
     // Get this rule's data
     const ruleID = cardElement.dataset.ruleId;
+    const description = cardElement.dataset.description || '';
     const passedMetrics = parseInt(cardElement.dataset.passedMetrics);
     const totalMetrics = parseInt(cardElement.dataset.totalMetrics);
     const passedCardinality = parseInt(cardElement.dataset.passedCardinality);
     const totalCardinality = parseInt(cardElement.dataset.totalCardinality);
     const impact = cardElement.dataset.impact;
+    
+    // Parse validator stats
+    let validatorStats = [];
+    try {
+        validatorStats = JSON.parse(cardElement.dataset.validatorStats || '[]');
+    } catch (e) {
+        console.warn('Failed to parse validator stats:', e);
+    }
     
     // Get all rules for this job to calculate total denominator
     const rulesContainer = cardElement.parentElement;
@@ -323,11 +332,11 @@ function showRuleDetailFromCard(cardElement, jobName) {
     const finalScore = (totalNumerator / totalDenominator) * 100;
     
     // Call the actual modal function with total denominator and final score
-    showRuleDetail(jobName, ruleID, passedMetrics, totalMetrics, passedCardinality, totalCardinality, impact, totalDenominator, finalScore);
+    showRuleDetail(jobName, ruleID, description, validatorStats, passedMetrics, totalMetrics, passedCardinality, totalCardinality, impact, totalDenominator, finalScore);
 }
 
 // Show rule detail modal
-function showRuleDetail(jobName, ruleID, passedMetrics, totalMetrics, passedCardinality, totalCardinality, impact, totalDenominator, finalScore) {
+function showRuleDetail(jobName, ruleID, description, validatorStats, passedMetrics, totalMetrics, passedCardinality, totalCardinality, impact, totalDenominator, finalScore) {
     const impactWeights = {
         'Critical': 40,
         'Important': 30,
@@ -370,8 +379,8 @@ function showRuleDetail(jobName, ruleID, passedMetrics, totalMetrics, passedCard
     // Update modal
     document.getElementById('ruleDetailTitle').innerHTML = `${ruleID} <span style="color: #888; font-weight: normal; font-size: 16px;">- ${jobName}</span>`;
     
-    // Rule description
-    document.getElementById('ruleDescription').textContent = getRuleDescription(ruleID);
+    // Rule description - use passed description or fallback to config
+    document.getElementById('ruleDescription').textContent = description || getRuleDescription(ruleID);
     
     // Contribution - show what percentage of the final score this rule represents
     const contributionColor = percentageOfFinalScore > 50 ? '#4caf50' : percentageOfFinalScore > 25 ? '#8bc34a' : percentageOfFinalScore > 10 ? '#ff9800' : '#f44336';
@@ -409,6 +418,39 @@ function showRuleDetail(jobName, ruleID, passedMetrics, totalMetrics, passedCard
         document.getElementById('ruleTotalCardinality').textContent = totalCardinality.toLocaleString();
     } else {
         document.getElementById('ruleCardinalitySection').style.display = 'none';
+    }
+    
+    // Validator Stats section
+    const validatorStatsContainer = document.getElementById('ruleValidatorStats');
+    if (validatorStats && validatorStats.length > 0) {
+        let validatorHTML = '<div style="font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px;">Validator Details</div>';
+        validatorHTML += '<div style="display: grid; gap: 10px;">';
+        
+        validatorStats.forEach(validator => {
+            const validatorPassRate = validator.TotalMetrics > 0 ? (validator.PassedMetrics / validator.TotalMetrics * 100).toFixed(1) : 0;
+            const validatorColor = validatorPassRate >= 90 ? '#4caf50' : validatorPassRate >= 75 ? '#8bc34a' : validatorPassRate >= 50 ? '#ff9800' : '#f44336';
+            
+            validatorHTML += `
+                <div style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 8px; border-left: 3px solid ${validatorColor};">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 6px;">
+                        <div>
+                            <div style="font-weight: 600; color: #fff; font-size: 13px;">${validator.UITitle || validator.Name}</div>
+                            ${validator.UIDescription ? `<div style="color: #888; font-size: 11px; margin-top: 4px; line-height: 1.4;">${validator.UIDescription}</div>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-size: 16px; font-weight: 600; color: ${validatorColor};">${validatorPassRate}%</div>
+                            <div style="font-size: 10px; color: #888;">${validator.PassedMetrics}/${validator.TotalMetrics}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        validatorHTML += '</div>';
+        validatorStatsContainer.innerHTML = validatorHTML;
+        validatorStatsContainer.style.display = 'block';
+    } else {
+        validatorStatsContainer.style.display = 'none';
     }
     
     // Detailed calculation breakdown

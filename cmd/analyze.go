@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"instrumentation-score/internal/collectors"
 	"instrumentation-score/internal/storage"
@@ -24,6 +23,18 @@ var (
 	analyzeLabelCardinalityConcurrency int
 	analyzeMetricsConcurrency          int
 	analyzeJobsConcurrency             int
+
+	// Batch query flags
+	analyzeBatchMode          string
+	analyzeBatchCharsPerGroup int
+	analyzeBatchPatterns      []string
+	analyzeBatchMaxResults    int
+	analyzeBatchConcurrency   int
+	analyzeBatchDebugMode     bool
+	analyzeBatchIntervalMs    int
+	analyzeBatchRPSLimit      int // Max metrics per batch for RPS control
+	analyzeStreamingMode      bool
+	analyzeMaxOpenFiles       int
 )
 
 var analyzeCmd = &cobra.Command{
@@ -33,9 +44,9 @@ var analyzeCmd = &cobra.Command{
 
 This command fetches metrics from Prometheus, analyzes them by job, and generates:
 - Per-job metric files with format: JOB|METRIC_NAME|LABELS|CARDINALITY
-- Error report for any failures during analysis
+- Error report in <output-dir>/errors/errors.txt
 
-The reports are written to a timestamped directory in the output folder.
+The reports are written directly to the specified output directory.
 
 Examples:
   # For authenticated Prometheus (e.g., Grafana Cloud)
@@ -77,6 +88,18 @@ func init() {
 	analyzeCmd.Flags().IntVar(&analyzeLabelCardinalityConcurrency, "label-cardinality-concurrency", 0, "Number of concurrent label cardinality API requests (default: 50, or CONCURRENT_LABEL_CARDINALITY env var)")
 	analyzeCmd.Flags().IntVar(&analyzeMetricsConcurrency, "metrics-concurrency", 0, "Number of concurrent metrics to process (default: 5, or CONCURRENT_METRICS env var)")
 	analyzeCmd.Flags().IntVar(&analyzeJobsConcurrency, "jobs-concurrency", 0, "Number of concurrent job queries per metric (default: 3, or CONCURRENT_JOBS env var)")
+
+	// Batch query flags
+	analyzeCmd.Flags().StringVar(&analyzeBatchMode, "batch-mode", "legacy", "Query mode: legacy, alphabetic, custom, adaptive (default: legacy for backward compatibility)")
+	analyzeCmd.Flags().IntVar(&analyzeBatchCharsPerGroup, "batch-chars-per-group", 3, "Characters per batch group for alphabetic mode (e.g., 3 for [a-c], [d-f], etc.)")
+	analyzeCmd.Flags().StringSliceVar(&analyzeBatchPatterns, "batch-patterns", []string{}, "Custom regex patterns for batch mode (e.g., 'http_.*,grpc_.*,aws_.*')")
+	analyzeCmd.Flags().IntVar(&analyzeBatchMaxResults, "batch-max-results", 10000, "Target max results per batch for adaptive mode")
+	analyzeCmd.Flags().IntVar(&analyzeBatchConcurrency, "batch-concurrency", 0, "Number of concurrent batch queries (default: 2, or CONCURRENT_BATCHES env var). Lower values reduce head spike.")
+	analyzeCmd.Flags().BoolVar(&analyzeBatchDebugMode, "batch-debug-mode", false, "Print batch details without executing queries (useful for optimization)")
+	analyzeCmd.Flags().IntVar(&analyzeBatchIntervalMs, "batch-interval-ms", 0, "Minimum milliseconds between batch starts for uniform load (0 = no rate limiting). Example: 500 = max 2 batches/sec")
+	analyzeCmd.Flags().IntVar(&analyzeBatchRPSLimit, "batch-rps-limit", 0, "Max metrics per batch to control query size/RPS. Overrides batch-max-results. Example: 1000 = each query returns max ~1000 metrics")
+	analyzeCmd.Flags().BoolVar(&analyzeStreamingMode, "streaming-mode", true, "Enable streaming writes to disk (reduces memory usage)")
+	analyzeCmd.Flags().IntVar(&analyzeMaxOpenFiles, "max-open-files", 100, "Maximum concurrent open file handles")
 }
 
 func runAnalyze() {
@@ -86,25 +109,28 @@ func runAnalyze() {
 		os.Exit(1)
 	}
 
-	if err := os.MkdirAll(analyzeOutputDir, 0700); err != nil {
+	// Use the output directory directly (no timestamped subdirectory)
+	jobMetricsDir := analyzeOutputDir
+	if err := os.MkdirAll(jobMetricsDir, 0700); err != nil {
 		fmt.Printf("ERROR: Failed to create output directory: %v\n", err)
 		os.Exit(1)
 	}
 
-	timestamp := time.Now().Format("20060102_150405")
-	jobMetricsDir := filepath.Join(analyzeOutputDir, fmt.Sprintf("job_metrics_%s", timestamp))
-	if err := os.MkdirAll(jobMetricsDir, 0700); err != nil {
-		fmt.Printf("ERROR: Failed to create job metrics directory: %v\n", err)
+	// Create errors subdirectory with static filename
+	errorsDir := filepath.Join(jobMetricsDir, "errors")
+	if err := os.MkdirAll(errorsDir, 0700); err != nil {
+		fmt.Printf("ERROR: Failed to create errors directory: %v\n", err)
 		os.Exit(1)
 	}
-
-	errorFile := filepath.Join(analyzeOutputDir, fmt.Sprintf("metrics_errors_%s.txt", timestamp))
+	errorFile := filepath.Join(errorsDir, "errors.txt")
 
 	fmt.Printf("Starting Prometheus metrics analysis...\n")
 	fmt.Printf("Prometheus URL: %s\n", client.BaseURL)
 	if analyzeQueryFilters != "" {
 		fmt.Printf("Query filters: %s\n", analyzeQueryFilters)
 	}
+	fmt.Printf("Batch mode: %s\n", analyzeBatchMode)
+	fmt.Printf("Streaming mode: %v\n", analyzeStreamingMode)
 	fmt.Printf("Retry count: %d\n", analyzeRetryCount)
 	fmt.Printf("Collect label cardinality: %v\n", analyzeCollectLabelCardinality)
 	fmt.Printf("Output directory: %s\n", jobMetricsDir)
@@ -124,18 +150,90 @@ func runAnalyze() {
 	if analyzeJobsConcurrency > 0 {
 		collector.SetJobsConcurrency(analyzeJobsConcurrency)
 	}
-	allData, errors, err := collector.CollectMetrics()
-	if err != nil {
-		fmt.Printf("ERROR: %v\n", err)
-		os.Exit(1)
+	if analyzeBatchConcurrency > 0 {
+		collector.SetBatchConcurrency(analyzeBatchConcurrency)
 	}
 
-	fmt.Println("Writing per-job reports...")
-	if err := collectors.WritePerJobFiles(jobMetricsDir, allData); err != nil {
-		fmt.Printf("ERROR: Failed to write job files: %v\n", err)
-		os.Exit(1)
+	// Configure batch debug mode
+	collector.SetBatchDebugMode(analyzeBatchDebugMode)
+
+	// Configure rate limiting for uniform load distribution
+	if analyzeBatchIntervalMs > 0 {
+		collector.SetBatchIntervalMs(analyzeBatchIntervalMs)
 	}
-	fmt.Printf("Generated per-job files in %s/\n\n", jobMetricsDir)
+
+	// Configure batch mode
+	// Auto-switch to adaptive mode when RPS limit is set (most optimized)
+	effectiveBatchMode := analyzeBatchMode
+	if analyzeBatchRPSLimit > 0 && analyzeBatchMode == "legacy" {
+		effectiveBatchMode = "adaptive"
+		fmt.Printf("Auto-switching to adaptive batch mode (RPS limit set)\n")
+	}
+
+	if effectiveBatchMode != "legacy" {
+		collector.SetBatchMode(true)
+
+		var strategy collectors.BatchStrategy
+		switch effectiveBatchMode {
+		case "alphabetic":
+			strategy = &collectors.AlphabeticBatchStrategy{
+				CharsPerBatch: analyzeBatchCharsPerGroup,
+			}
+		case "custom":
+			if len(analyzeBatchPatterns) == 0 {
+				fmt.Printf("ERROR: --batch-patterns required for custom batch mode\n")
+				os.Exit(1)
+			}
+			strategy = &collectors.CustomBatchStrategy{
+				Patterns: analyzeBatchPatterns,
+			}
+		case "adaptive":
+			// Use RPS limit if specified, otherwise fall back to max results
+			targetSize := analyzeBatchMaxResults
+			if analyzeBatchRPSLimit > 0 {
+				targetSize = analyzeBatchRPSLimit
+				fmt.Printf("RPS limit: %d metrics per batch\n", targetSize)
+			}
+			strategy = &collectors.AdaptiveBatchStrategy{
+				TargetResultsPerBatch: targetSize,
+			}
+		default:
+			fmt.Printf("ERROR: Invalid batch mode: %s (must be: legacy, alphabetic, custom, or adaptive)\n", effectiveBatchMode)
+			os.Exit(1)
+		}
+
+		collector.SetBatchStrategy(strategy)
+	}
+
+	// Configure streaming mode
+	collector.SetStreamingMode(analyzeStreamingMode)
+	collector.SetMaxOpenFiles(analyzeMaxOpenFiles)
+
+	// Collect metrics
+	var errors []collectors.ErrorRecord
+	if analyzeStreamingMode {
+		// Use streaming mode (memory efficient)
+		errors, err = collector.CollectMetricsStreaming(jobMetricsDir)
+		if err != nil {
+			fmt.Printf("ERROR: %v\n", err)
+			os.Exit(1)
+		}
+	} else {
+		// Use legacy in-memory mode (backward compatible)
+		var allData []collectors.JobMetricData
+		allData, errors, err = collector.CollectMetrics()
+		if err != nil {
+			fmt.Printf("ERROR: %v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Println("Writing per-job reports...")
+		if err := collectors.WritePerJobFiles(jobMetricsDir, allData); err != nil {
+			fmt.Printf("ERROR: Failed to write job files: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Generated per-job files in %s/\n\n", jobMetricsDir)
+	}
 
 	if len(errors) > 0 {
 		fmt.Printf("WARNING: Encountered %d errors during processing\n", len(errors))
@@ -175,7 +273,7 @@ func runAnalyze() {
 			Region:        region,
 			JobMetricsDir: jobMetricsDir,
 			ErrorFile:     errorFile,
-			Timestamp:     timestamp,
+			RunID:         filepath.Base(jobMetricsDir), // Use directory name as S3 subdirectory
 		}
 
 		if err := storage.UploadAnalysisResults(config); err != nil {
