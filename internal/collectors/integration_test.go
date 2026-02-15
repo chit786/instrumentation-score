@@ -165,18 +165,17 @@ func TestEdgeCase_PatternDepthLimit(t *testing.T) {
 				t.Error("Expected non-nil result")
 			}
 			
-			if tc.canSplit {
-				// Should return multiple patterns
-				if len(result) < 2 {
-					// Some patterns might not split if they're already minimal
-					// This is acceptable (e.g., single character ranges)
-				}
-			} else {
-				// Too deep - should return empty slice to trigger fallback
-				if len(result) != 0 {
-					t.Logf("Pattern %s returned %d splits (expected 0 for fallback trigger)", tc.input, len(result))
-				}
+		// Some patterns might not split if they're already minimal
+		// This is acceptable (e.g., single character ranges)
+		if tc.canSplit && len(result) >= 2 {
+			// Successfully split into multiple patterns
+			t.Logf("Pattern %s split into %d patterns", tc.input, len(result))
+		} else if !tc.canSplit {
+			// Too deep - should return empty slice to trigger fallback
+			if len(result) != 0 {
+				t.Logf("Pattern %s returned %d splits (expected 0 for fallback trigger)", tc.input, len(result))
 			}
+		}
 		})
 	}
 }

@@ -69,9 +69,16 @@ export url="https://your-prometheus-instance.com/api/prom"
 ### 2. Analyze Metrics
 
 ```bash
-instrumentation-score analyze \
-  --output-dir ./reports \
-  --collect-label-cardinality
+/instrumentation-score analyze \
+  --output-dir=reports/adaptive \
+  --retry-failures-count=3 \
+  --batch-rps-limit 1000 \ # number of metrics to allow in batch for single promql query. 
+  --batch-mode adaptive \
+  --batch-interval-ms 2000 \
+  --batch-concurrency 1 \
+  --jobs-concurrency 2
+  # --collect-label-cardinality \ enable if you want per label cardinality to be calculated
+  # --label-cardinality-concurrency 5
 ```
 
 ### 3. Evaluate & Get Scores
@@ -79,11 +86,11 @@ instrumentation-score analyze \
 ```bash
 # All jobs with HTML report
 instrumentation-score evaluate \
-  --job-dir reports/job_metrics_*/ \
+  --job-dir reports/adaptive \
   --output html \
-  --html-file report.html \
+  --html-file report.html \ # a detailed html report for issues in metrics
   --show-costs \
-  --cost-unit-price 0.00615
+  --cost-unit-price 0.00615 # $6.15 per 1000 metric
 ```
 
 ### 4. View Results

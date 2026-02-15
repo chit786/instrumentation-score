@@ -1068,7 +1068,9 @@ func (c *Collector) fetchAndStreamLegacy(
 					LabelCardinality: labelCard,
 				}
 
-				writer.Write(data)
+				if err := writer.Write(data); err != nil {
+					log.Printf("WARNING: Failed to write data for %s/%s: %v", jobName, metric, err)
+				}
 			}
 
 			current := atomic.AddInt32(&processed, 1)
