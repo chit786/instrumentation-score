@@ -35,6 +35,7 @@ var (
 	analyzeBatchRPSLimit      int // Max metrics per batch for RPS control
 	analyzeStreamingMode      bool
 	analyzeMaxOpenFiles       int
+	analyzeOrgID              string // Mimir multi-tenant org ID (X-Scope-OrgID), optional
 )
 
 var analyzeCmd = &cobra.Command{
@@ -55,6 +56,9 @@ Examples:
   
   instrumentation-score analyze \
     --output-dir ./reports
+
+  # For Mimir multi-tenant (optional, or use --org-id)
+  instrumentation-score analyze --output-dir ./reports --org-id my-tenant
 
   # For local/unauthenticated Prometheus
   export url="http://localhost:9090"
@@ -100,6 +104,7 @@ func init() {
 	analyzeCmd.Flags().IntVar(&analyzeBatchRPSLimit, "batch-rps-limit", 0, "Max metrics per batch to control query size/RPS. Overrides batch-max-results. Example: 1000 = each query returns max ~1000 metrics")
 	analyzeCmd.Flags().BoolVar(&analyzeStreamingMode, "streaming-mode", true, "Enable streaming writes to disk (reduces memory usage)")
 	analyzeCmd.Flags().IntVar(&analyzeMaxOpenFiles, "max-open-files", 100, "Maximum concurrent open file handles")
+	analyzeCmd.Flags().StringVar(&analyzeOrgID, "org-id", "", "Mimir multi-tenant org ID (sets X-Scope-OrgID header). Optional. Overrides X_SCOPE_ORG_ID env var.")
 }
 
 func runAnalyze() {
@@ -107,6 +112,9 @@ func runAnalyze() {
 	if err != nil {
 		fmt.Printf("ERROR: %v\n", err)
 		os.Exit(1)
+	}
+	if analyzeOrgID != "" {
+		client.OrgID = analyzeOrgID
 	}
 
 	// Use the output directory directly (no timestamped subdirectory)

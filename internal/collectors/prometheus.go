@@ -19,6 +19,7 @@ import (
 type PrometheusClient struct {
 	BaseURL    string
 	Login      string
+	OrgID      string // X-Scope-OrgID for Mimir multi-tenant routing (env: X_SCOPE_ORG_ID)
 	Client     *http.Client
 	RetryCount int
 }
@@ -74,11 +75,12 @@ func (c *PrometheusClient) doRequestWithRetry(req *http.Request) (*http.Response
 }
 
 // NewPrometheusClientFromEnv creates a Prometheus client from environment variables
-// Returns error if required environment variables are not set
-// Note: 'login' is optional (for local/unauthenticated Prometheus instances)
+// Returns error if required environment variables are not set.
+// Optional env: login (user:password), X_SCOPE_ORG_ID (Mimir multi-tenant org ID).
 func NewPrometheusClientFromEnv() (*PrometheusClient, error) {
 	login := os.Getenv("login")
 	baseURL := os.Getenv("url")
+	orgID := os.Getenv("X_SCOPE_ORG_ID")
 
 	if baseURL == "" {
 		return nil, fmt.Errorf("missing required environment variable: 'url' must be set\n\n" +
@@ -86,11 +88,15 @@ func NewPrometheusClientFromEnv() (*PrometheusClient, error) {
 			"  # For authenticated Prometheus (e.g., Grafana Cloud)\n" +
 			"  export login=\"user:password\"\n" +
 			"  export url=\"https://prometheus.example.com\"\n\n" +
+			"  # For Mimir multi-tenant\n" +
+			"  export X_SCOPE_ORG_ID=\"my-tenant\"\n\n" +
 			"  # For local/unauthenticated Prometheus\n" +
 			"  export url=\"http://localhost:9090\"")
 	}
 
-	return NewPrometheusClient(baseURL, login), nil
+	client := NewPrometheusClient(baseURL, login)
+	client.OrgID = orgID
+	return client, nil
 }
 
 // PrometheusResponse represents a Prometheus query response
@@ -102,13 +108,16 @@ type PrometheusResponse struct {
 	} `json:"data"`
 }
 
-// addAuthIfNeeded adds Basic Auth to the request if login credentials are provided
+// addAuthIfNeeded adds Basic Auth and X-Scope-OrgID (for Mimir) to the request when configured
 func (c *PrometheusClient) addAuthIfNeeded(req *http.Request) {
 	if c.Login != "" {
 		parts := strings.Split(c.Login, ":")
 		if len(parts) == 2 {
 			req.SetBasicAuth(parts[0], parts[1])
 		}
+	}
+	if c.OrgID != "" {
+		req.Header.Set("X-Scope-OrgID", c.OrgID)
 	}
 }
 

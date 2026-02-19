@@ -15,6 +15,24 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
+// contentTypeFromKey returns the S3 Content-Type for a given key/path.
+// Uses proper MIME types (e.g. text/html for HTML) so browsers and tools behave correctly.
+func contentTypeFromKey(key string) string {
+	ext := strings.ToLower(filepath.Ext(key))
+	switch ext {
+	case ".html", ".htm":
+		return "text/html"
+	case ".json":
+		return "application/json"
+	case ".txt":
+		return "text/plain"
+	case ".prom":
+		return "text/plain" // OpenMetrics format
+	default:
+		return "application/octet-stream"
+	}
+}
+
 type S3Client struct {
 	bucket   string
 	prefix   string
@@ -63,10 +81,12 @@ func (c *S3Client) UploadFile(localPath, s3Key string) error {
 	defer file.Close()
 
 	key := c.buildKey(s3Key)
+	contentType := contentTypeFromKey(s3Key)
 	_, err = c.uploader.Upload(context.Background(), &s3.PutObjectInput{
-		Bucket: aws.String(c.bucket),
-		Key:    aws.String(key),
-		Body:   file,
+		Bucket:      aws.String(c.bucket),
+		Key:         aws.String(key),
+		Body:        file,
+		ContentType: aws.String(contentType),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload file to s3://%s/%s: %w", c.bucket, key, err)
@@ -217,10 +237,12 @@ func (c *S3Client) FileExists(s3Key string) (bool, error) {
 
 func (c *S3Client) UploadContent(content []byte, s3Key string) error {
 	key := c.buildKey(s3Key)
+	contentType := contentTypeFromKey(s3Key)
 	_, err := c.uploader.Upload(context.Background(), &s3.PutObjectInput{
-		Bucket: aws.String(c.bucket),
-		Key:    aws.String(key),
-		Body:   bytes.NewReader(content),
+		Bucket:      aws.String(c.bucket),
+		Key:         aws.String(key),
+		Body:        bytes.NewReader(content),
+		ContentType: aws.String(contentType),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to upload content to s3://%s/%s: %w", c.bucket, key, err)
